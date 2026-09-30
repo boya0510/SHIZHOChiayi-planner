@@ -24,6 +24,7 @@
                             100: '#F9ECCB',
                             500: '#D4A373',
                             600: '#C58F5B',
+                            700: '#B57F4B',
                         }
                     },
                     fontFamily: {
@@ -36,9 +37,6 @@
     <!-- Google Fonts & FontAwesome Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght=1,400;1,600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Leaflet Map CSS & JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- Vue 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
@@ -55,117 +53,104 @@
             color: #3D3325;
             -webkit-tap-highlight-color: transparent;
         }
-        .leaflet-container {
-            font-family: "Noto Sans TC", sans-serif;
-            border-radius: 1rem;
-        }
-        .leaflet-bar {
-            border: 1px solid #FAF6ED !important;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04) !important;
-        }
-        .leaflet-bar a {
-            background-color: #FFF !important;
-            color: #3D3325 !important;
-            border-bottom: 1px solid #FAF6ED !important;
-        }
         .fade-enter-active, .fade-leave-active {
             transition: opacity 0.25s ease;
         }
         .fade-enter-from, .fade-leave-to {
             opacity: 0;
         }
-        .slide-enter-active, .slide-leave-active {
-            transition: transform 0.3s ease;
-        }
-        .slide-enter-from, .slide-leave-to {
-            transform: translateX(100%);
-        }
     </style>
 </head>
 <body class="antialiased overflow-x-hidden">
 
-    <div id="app" class="max-w-md mx-auto min-h-screen bg-cream-50 flex flex-col shadow-xl relative pb-28">
+    <div id="app" class="max-w-md mx-auto min-h-screen bg-cream-50 flex flex-col shadow-xl relative pb-8">
         
-        <!-- Top Status Bar Info: Dynamic alert -->
-        <div class="text-center py-2 bg-amber-500 text-white text-[10px] font-bold tracking-wider shadow-inner flex items-center justify-center space-x-1">
-            <i class="fa-solid fa-triangle-exclamation animate-pulse"></i>
-            <span>行程尚未完全確定 可能稍微會有異動</span>
-        </div>
-
-        <!-- App Header (Japanese Minimalist Style) -->
+        <!-- App Header -->
         <header class="px-6 pt-6 pb-5 bg-cream-100 border-b border-cream-200">
             <div class="flex justify-between items-start">
                 <div>
                     <span class="text-[10px] font-bold tracking-widest text-amber-600 uppercase">同遊嘉義・共創回憶</span>
                     <h1 class="text-xl font-bold text-cream-900 mt-0.5">世座建設 2026 員工旅遊</h1>
                     <div class="flex flex-col space-y-1 mt-1.5">
-                        <p class="text-[10px] text-amber-700 font-medium flex items-center bg-amber-50/70 border border-amber-100/50 rounded-md px-2 py-0.5 w-max">
-                            <i class="fa-solid fa-shirt mr-1.5 text-amber-500 text-[9px]"></i>
-                            DRESS CODE 風格：大地色系 ‧ 輕日系慢旅
-                        </p>
                         <p class="text-[10px] text-amber-800 font-medium flex items-center bg-amber-50/70 border border-amber-100/50 rounded-md px-2 py-0.5 w-max">
                             <i class="fa-solid fa-bus mr-1.5 text-amber-600 text-[9px]"></i>
                             遊覽車：雄霸旅遊（車牌 <span class="font-bold font-mono ml-1 text-cream-900 bg-amber-100/80 px-1 rounded border border-amber-200/50">KAA-6291</span>）
                         </p>
                     </div>
                 </div>
-                <!-- Weather Widget (Chiayi Live Temperature) -->
-                <div class="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-full border border-cream-200 shadow-sm flex-shrink-0">
-                    <i :class="weatherIcon" class="text-amber-500 text-xs"></i>
-                    <span class="text-xs font-bold text-cream-800">{{ currentTemp }}°C</span>
-                    <span class="text-[9px] text-gray-400">嘉義</span>
+                <!-- Weather Widget -->
+                <div @click="fetchWeather" title="點擊刷新即時天氣" class="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-full border border-cream-200 shadow-sm flex-shrink-0 cursor-pointer hover:border-amber-400 transition">
+                    <i :class="[weatherIcon, isWeatherLoading ? 'animate-spin' : '']" class="text-amber-500 text-xs"></i>
+                    <div class="flex items-center space-x-1">
+                        <span class="text-xs font-bold text-cream-800">{{ currentTemp }}°C</span>
+                        <span class="text-[9px] text-gray-400">嘉義</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Horizontal Scrollable Tab Selectors -->
-            <div class="flex space-x-3 overflow-x-auto no-scrollbar mt-6 py-1">
+            <!-- Restore Upper Tab Buttons -->
+            <div class="grid grid-cols-4 gap-1.5 mt-4 pt-3 border-t border-cream-200/60">
                 <button 
                     @click="activeTab = 'day1'"
-                    :class="activeTab === 'day1' ? 'bg-cream-800 text-cream-50 shadow-sm' : 'bg-white text-cream-800 border border-cream-200'"
-                    class="flex-shrink-0 px-4 py-3 rounded-xl flex flex-col items-center transition-all duration-300 min-w-[125px]"
+                    :class="activeTab === 'day1' ? 'bg-cream-900 text-white shadow-md' : 'bg-white text-cream-800 border border-cream-200 hover:border-amber-400'"
+                    class="rounded-xl py-2.5 px-1 flex flex-col items-center justify-center transition-all duration-200"
                 >
-                    <span class="text-[9px] uppercase tracking-wider opacity-80">10/2 (五)</span>
-                    <span class="text-xs font-bold mt-0.5">DAY 1 木都光影</span>
+                    <span :class="activeTab === 'day1' ? 'text-amber-200' : 'text-gray-400'" class="text-[9px] font-medium tracking-wider">10/2 (五)</span>
+                    <span class="text-xs font-bold mt-0.5 flex items-center">
+                        <i class="fa-solid fa-tree text-[10px] mr-1"></i>DAY 1
+                    </span>
                 </button>
+
                 <button 
                     @click="activeTab = 'day2'"
-                    :class="activeTab === 'day2' ? 'bg-cream-800 text-cream-50 shadow-sm' : 'bg-white text-cream-800 border border-cream-200'"
-                    class="flex-shrink-0 px-4 py-3 rounded-xl flex flex-col items-center transition-all duration-300 min-w-[125px]"
+                    :class="activeTab === 'day2' ? 'bg-cream-900 text-white shadow-md' : 'bg-white text-cream-800 border border-cream-200 hover:border-amber-400'"
+                    class="rounded-xl py-2.5 px-1 flex flex-col items-center justify-center transition-all duration-200"
                 >
-                    <span class="text-[9px] uppercase tracking-wider opacity-80">10/3 (六)</span>
-                    <span class="text-xs font-bold mt-0.5">DAY 2 古院薰風</span>
+                    <span :class="activeTab === 'day2' ? 'text-amber-200' : 'text-gray-400'" class="text-[9px] font-medium tracking-wider">10/3 (六)</span>
+                    <span class="text-xs font-bold mt-0.5 flex items-center">
+                        <i class="fa-solid fa-mountain text-[10px] mr-1"></i>DAY 2
+                    </span>
                 </button>
+
                 <button 
                     @click="activeTab = 'rooms'"
-                    :class="activeTab === 'rooms' ? 'bg-cream-800 text-cream-50 shadow-sm' : 'bg-white text-cream-800 border border-cream-200'"
-                    class="flex-shrink-0 px-4 py-3 rounded-xl flex flex-col items-center justify-center transition-all duration-300 min-w-[100px]"
+                    :class="activeTab === 'rooms' ? 'bg-cream-900 text-white shadow-md' : 'bg-white text-cream-800 border border-cream-200 hover:border-amber-400'"
+                    class="rounded-xl py-2.5 px-1 flex flex-col items-center justify-center transition-all duration-200"
                 >
-                    <span class="text-[9px] uppercase tracking-wider opacity-80">入住安排</span>
-                    <span class="text-xs font-bold mt-0.5"><i class="fa-solid fa-bed mr-1"></i> 分房表</span>
+                    <span :class="activeTab === 'rooms' ? 'text-amber-200' : 'text-gray-400'" class="text-[9px] font-medium tracking-wider">入住安排</span>
+                    <span class="text-xs font-bold mt-0.5 flex items-center">
+                        <i class="fa-solid fa-bed text-[10px] mr-1"></i>分房表
+                    </span>
                 </button>
+
                 <button 
-                    @click="showBackupDrawer = true"
-                    class="flex-shrink-0 px-4 py-3 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex flex-col items-center justify-center min-w-[100px]"
+                    @click="openFoodRecommendation()"
+                    :class="showAIModal ? 'bg-cream-900 text-white shadow-md' : 'bg-white text-cream-800 border border-cream-200 hover:border-amber-400'"
+                    class="rounded-xl py-2.5 px-1 flex flex-col items-center justify-center transition-all duration-200"
                 >
-                    <span class="text-[9px] uppercase tracking-wider">應變計畫</span>
-                    <span class="text-xs font-bold mt-0.5"><i class="fa-solid fa-box-archive mr-1"></i> 備用景點</span>
+                    <span :class="showAIModal ? 'text-amber-200' : 'text-amber-600'" class="text-[9px] font-medium tracking-wider">在地推薦</span>
+                    <span class="text-xs font-bold mt-0.5 flex items-center">
+                        <i class="fa-solid fa-utensils text-[10px] mr-1"></i>美食指南
+                    </span>
                 </button>
             </div>
         </header>
 
-        <!-- Main Content Area -->
+        <!-- Main Content -->
         <main class="flex-1 px-5 py-6">
             
-            <!-- Tab Contents 1 & 2: Itinerary Timeline -->
+            <!-- Timeline Contents (Day 1 & Day 2) -->
             <div v-if="activeTab === 'day1' || activeTab === 'day2'" class="space-y-6">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xs font-bold text-cream-800 flex items-center tracking-widest uppercase">
-                        <i class="fa-solid fa-compass text-amber-500 mr-2"></i> 
-                        {{ activeTab === 'day1' ? '10/2 (五) 木都光影 ‧ 莊園漫步' : '10/3 (六) 古院薰風 ‧ 漁港鮮味' }}
+                <div class="flex items-center space-x-2 pb-2 border-b border-cream-200">
+                    <span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-700 flex items-center justify-center text-[10px] flex-shrink-0">
+                        <i class="fa-solid fa-compass"></i>
+                    </span>
+                    <h2 class="text-sm font-bold text-cream-900">
+                        {{ activeTab === 'day1' ? '10/2 (五) 木都光影 ‧ 莊園漫步' : '10/3 (六) 古院薰風 ‧ 老街巡禮' }}
                     </h2>
                 </div>
 
-                <!-- Timeline List -->
+                <!-- Timeline Cards -->
                 <div class="space-y-4 relative pl-3 border-l border-cream-200 ml-2">
                     <div 
                         v-for="(item, idx) in currentDayItinerary" 
@@ -177,9 +162,9 @@
                             <span :class="getTypeDotColor(item.type)" class="w-1.5 h-1.5 rounded-full"></span>
                         </div>
 
-                        <!-- Card Content -->
+                        <!-- Card Body -->
                         <div class="bg-white border border-cream-200 hover:border-amber-500/30 rounded-xl p-4 transition-all duration-300 shadow-sm relative overflow-hidden">
-                            <!-- Category Badge Watermark -->
+                            <!-- Category Badge -->
                             <div class="absolute top-3 right-3 flex items-center">
                                 <span :class="getTypeBadgeStyle(item.type)" class="text-[8px] font-bold px-2 py-0.5 rounded-full tracking-wider">
                                     {{ getTypeLabel(item.type) }}
@@ -198,126 +183,40 @@
                                 {{ item.location }}
                             </p>
 
-                            <!-- Notes Section -->
+                            <!-- Notes -->
                             <div v-if="item.note" class="mt-2.5 bg-cream-50 rounded-lg p-2.5 border border-cream-200/50">
                                 <span class="text-[8px] text-amber-600 font-bold block uppercase tracking-wider mb-0.5">行程備註</span>
-                                <p class="text-[11px] text-cream-800 leading-relaxed whitespace-pre-line">{{ item.note }}</p>
+                                <p class="text-[11px] text-cream-800 leading-relaxed whitespace-pre-line" v-html="item.note"></p>
                             </div>
 
-                            <!-- Backup Restaurant Option (Specifically for Day 1 Lunch - Smartfish) -->
-                            <div v-if="item.id === 6" class="mt-3">
-                                <div class="flex justify-between items-center">
+                            <!-- Action Buttons: Food Guide & Navigation (Parallel Layout) -->
+                            <div v-if="item.id === 13 || (item.coords && !item.hideNavButton)" class="mt-3 flex items-center justify-between gap-2">
+                                <div>
                                     <button 
-                                        @click="showDay1LunchBackup = !showDay1LunchBackup" 
-                                        class="text-[10px] bg-amber-50/80 hover:bg-amber-100 text-amber-800 font-bold px-2.5 py-1.5 rounded border border-amber-200/30 transition flex items-center space-x-1"
+                                        v-if="item.id === 13"
+                                        @click="openFoodRecommendation()"
+                                        class="text-[10px] bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-amber-200/60 transition shadow-xs"
                                     >
-                                        <i class="fa-solid fa-utensils text-amber-600 text-[9px]"></i>
-                                        <span>若無訂到位時備案</span>
-                                        <i :class="showDay1LunchBackup ? 'fa-chevron-up' : 'fa-chevron-down'" class="fa-solid text-[8px] ml-0.5"></i>
+                                        <i class="fa-solid fa-utensils text-amber-500 text-[9px]"></i>
+                                        <span>市區美食指南</span>
                                     </button>
                                 </div>
-                                <div v-if="showDay1LunchBackup" class="mt-2.5 bg-amber-50/30 border border-amber-200/20 rounded-lg p-2.5">
-                                    <span class="text-[9px] text-amber-700 font-bold block mb-0.5">備案：噴水雞肉飯 (小雅旗艦店)</span>
-                                    <p class="text-[10px] text-gray-500">地址：嘉義市東區小雅路382號</p>
-                                    <p class="text-[10px] text-gray-500 mt-1">特色：寬敞明亮的大型旗艦店，備有專屬停車場與舒適大圓桌，非常適合團體聚餐。招牌紅蔥頭雞絲飯與精緻手作涼菜，是錯過砂鍋魚頭時的最佳在地美味備案。</p>
-                                    <div class="mt-2 flex justify-end">
-                                        <a 
-                                            href="https://www.google.com/maps/dir/?api=1&destination=噴水雞肉飯+小雅旗艦店" 
-                                            target="_blank" 
-                                            class="text-[9px] font-bold text-cream-800 hover:text-amber-600 bg-white border border-cream-200 px-2.5 py-1 rounded shadow-sm inline-flex items-center transition"
-                                        >
-                                            <i class="fa-solid fa-map-location-dot mr-1 text-amber-600"></i> Google 導航
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Backup Restaurant Option (Specifically for Day 2 Lunch - Caiheju) -->
-                            <div v-if="item.id === 14" class="mt-3">
-                                <div class="flex justify-between items-center">
-                                    <button 
-                                        @click="showDay2LunchBackup = !showDay2LunchBackup" 
-                                        class="text-[10px] bg-amber-50/80 hover:bg-amber-100 text-amber-800 font-bold px-2.5 py-1.5 rounded border border-amber-200/30 transition flex items-center space-x-1"
+                                <div>
+                                    <a 
+                                        v-if="item.coords && !item.hideNavButton"
+                                        :href="'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(item.location)" 
+                                        target="_blank" 
+                                        class="text-[10px] font-bold text-cream-800 hover:text-amber-600 bg-cream-100 hover:bg-amber-50 border border-cream-200 px-3 py-1.5 rounded-lg inline-flex items-center transition"
                                     >
-                                        <i class="fa-solid fa-utensils text-amber-600 text-[9px]"></i>
-                                        <span>若無訂到位時備案</span>
-                                        <i :class="showDay2LunchBackup ? 'fa-chevron-up' : 'fa-chevron-down'" class="fa-solid text-[8px] ml-0.5"></i>
-                                    </button>
+                                        <i class="fa-solid fa-map-location-dot mr-1.5 text-amber-600"></i> 
+                                        Google 導航
+                                    </a>
                                 </div>
-                                <div v-if="showDay2LunchBackup" class="mt-2.5 bg-amber-50/30 border border-amber-200/20 rounded-lg p-2.5">
-                                    <span class="text-[9px] text-amber-700 font-bold block mb-0.5">備案：仙悅居餐廳</span>
-                                    <p class="text-[10px] text-gray-500">地址：嘉義縣朴子市山通路1-85號</p>
-                                    <p class="text-[10px] text-gray-500 mt-1">特色：朴子當地超人氣的中華料理與精緻熱炒餐廳，正對著朴子藝術公園。招牌銷魂炸子雞外酥內嫩、金沙中卷鹹香酥脆，菜色精緻且CP值極高，若采荷居人文茶館無訂到位，此處是團體聚餐無雷的最佳首選備案！</p>
-                                    <div class="mt-2 flex justify-end">
-                                        <a 
-                                            href="https://www.google.com/maps/dir/?api=1&destination=仙悅居餐廳" 
-                                            target="_blank" 
-                                            class="text-[9px] font-bold text-cream-800 hover:text-amber-600 bg-white border border-cream-200 px-2.5 py-1 rounded shadow-sm inline-flex items-center transition"
-                                        >
-                                            <i class="fa-solid fa-map-location-dot mr-1 text-amber-600"></i> Google 導航
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Custom Warning/Important Notes Section (ONLY for Day 2 Xianghe Fishery) -->
-                            <div v-if="item.id === 15" class="mt-3">
-                                <div class="flex justify-between items-center">
-                                    <button 
-                                        @click="showXiangheNotes = !showXiangheNotes" 
-                                        class="text-[10px] bg-amber-50/80 hover:bg-amber-100 text-amber-800 font-bold px-2.5 py-1.5 rounded border border-amber-200/30 transition flex items-center space-x-1"
-                                    >
-                                        <i class="fa-solid fa-circle-exclamation text-amber-600 text-[9px]"></i>
-                                        <span>查看活動與注意事項</span>
-                                        <i :class="showXiangheNotes ? 'fa-chevron-up' : 'fa-chevron-down'" class="fa-solid text-[8px] ml-0.5"></i>
-                                    </button>
-                                </div>
-                                <div v-if="showXiangheNotes" class="mt-2.5 bg-amber-50/30 border border-amber-200/20 rounded-lg p-3 text-cream-900">
-                                    <span class="text-[9px] text-amber-700 font-bold block mb-1.5 uppercase tracking-wider">門票包含以下活動項目：</span>
-                                    <ul class="text-[10px] space-y-1 text-gray-700 font-medium pl-1">
-                                        <li>❶ 划船競賽</li>
-                                        <li>❷ 摸文蛤水中尋寶</li>
-                                        <li>❸ 釣魚體驗（不分大小，釣到魚加收50元處理費可現場烤）</li>
-                                        <li>❹ 海盜服免費拍照體驗</li>
-                                        <li>❺ 送烤蚵、1人1隻蝦、摸到的文蛤也一起烤（食材依人數計算）</li>
-                                    </ul>
-                                    <div class="mt-3 pt-2.5 border-t border-amber-200/30">
-                                        <span class="text-[9px] text-red-600 font-bold block mb-1 flex items-center">
-                                            <i class="fa-solid fa-bullhorn mr-1"></i> 行前貼心提醒
-                                        </span>
-                                        <p class="text-[10px] text-gray-600 leading-relaxed">
-                                            🔊 請務必攜帶<strong>舊襪子</strong>（用於下水摸文蛤防刮腳）、<strong>遮陽衣帽、防曬用品、個人水壺、換洗衣物</strong>（以便弄濕衣服時可隨時替換）。
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Custom Food Recommendation Section (ONLY for Day 1 Free Activity) -->
-                            <div v-if="item.id === 4" class="mt-3 pt-3 border-t border-cream-200/50 flex justify-between items-center">
-                                <button 
-                                    @click="openFoodRecommendation(item)"
-                                    class="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold flex items-center space-x-1 px-3 py-1.5 rounded-lg border border-amber-200/50 transition-all shadow-sm"
-                                >
-                                    <i class="fa-solid fa-utensils text-amber-500"></i>
-                                    <span>嘉義市區美食推薦</span>
-                                </button>
-                            </div>
-
-                            <!-- Navigation Button inside Card (if available & not hidden) -->
-                            <div v-if="item.coords && !item.hideNavButton" class="mt-2.5 flex justify-end">
-                                <a 
-                                    :href="'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(item.location)" 
-                                    target="_blank" 
-                                    class="text-[10px] font-bold text-cream-800 hover:text-amber-600 bg-cream-100 hover:bg-amber-50 border border-cream-200 px-3 py-1.5 rounded-lg inline-flex items-center transition"
-                                >
-                                    <i class="fa-solid fa-map-location-dot mr-1.5 text-amber-600"></i> 
-                                    Google 導航
-                                </a>
                             </div>
 
                         </div>
 
-                        <!-- Visual Travel Time Indicator Between Cards (Walking vs Bus) -->
+                        <!-- Travel Time Indicator -->
                         <div 
                             v-if="idx < currentDayItinerary.length - 1 && getNextTravelTime(item.id)"
                             class="my-3 py-1 pl-4 flex items-center space-x-2 text-amber-700/80 font-medium"
@@ -337,33 +236,9 @@
 
                     </div>
                 </div>
-
-                <!-- Interactive Map Section -->
-                <div class="mt-8 border-t border-cream-200 pt-6">
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="text-xs font-bold text-cream-800 flex items-center tracking-widest">
-                            <i class="fa-solid fa-map text-amber-500 mr-2"></i> 
-                            當日路線軌跡導覽
-                        </h2>
-                        <button 
-                            @click="locateUser" 
-                            class="text-[10px] bg-white border border-cream-200 hover:border-amber-500 px-2.5 py-1 rounded-lg text-cream-800 flex items-center transition shadow-sm font-bold"
-                        >
-                            <i class="fa-solid fa-location-crosshairs mr-1 text-amber-500"></i> 定位我的位置
-                        </button>
-                    </div>
-                    
-                    <div class="bg-white p-2 rounded-2xl border border-cream-200 shadow-sm overflow-hidden">
-                        <div id="map" class="w-full h-64 rounded-xl z-0"></div>
-                        <div class="p-1.5 text-[9px] text-gray-400 flex items-center justify-between">
-                            <span><i class="fa-solid fa-info-circle mr-1"></i> 地圖自動標記當天行程路線</span>
-                            <span class="text-amber-600 font-semibold" v-if="userLocation">已取得您的即時位置</span>
-                        </div>
-                    </div>
-                </div>
             </div>
 
-            <!-- Tab Contents 3: Room Distribution List (Villa Organized) -->
+            <!-- Tab 3: Room Distribution -->
             <div v-if="activeTab === 'rooms'" class="space-y-6">
                 <div class="flex justify-between items-center">
                     <h2 class="text-xs font-bold text-cream-800 flex items-center tracking-widest uppercase">
@@ -372,54 +247,37 @@
                     </h2>
                 </div>
 
-                <!-- Header Info Card -->
                 <div class="bg-white border border-cream-200 rounded-2xl p-4 shadow-sm">
-                    <div class="border-b border-cream-200 pb-3 mb-4">
-                        <!-- Dynamic Warning Ribbon -->
-                        <div class="bg-amber-50 border border-amber-200 rounded-lg p-2.5 flex items-start space-x-2">
-                            <i class="fa-solid fa-circle-info text-amber-500 text-xs mt-0.5"></i>
-                            <div class="text-[9px] text-amber-900 font-medium leading-relaxed">
-                                <strong>※ 房間分配提示：</strong><br>
-                                目前分配名單僅供參考，當天可能依現場實際排房狀況進行微調，全棟室內嚴禁吸菸。
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Rendering Villas (4 distinct buildings) -->
                     <div class="space-y-6">
                         <div 
                             v-for="villa in villas" 
                             :key="villa.name" 
                             class="border border-cream-200 rounded-xl bg-cream-50/40 overflow-hidden shadow-sm"
                         >
-                            <!-- Villa Header Banner -->
                             <div class="bg-cream-800 px-4 py-2.5 flex justify-between items-center text-cream-50">
                                 <span class="text-xs font-bold tracking-widest"><i class="fa-solid fa-house-chimney mr-1.5 text-amber-500"></i>{{ villa.name }}</span>
                                 <span class="text-[8px] tracking-widest opacity-80 uppercase font-mono">Villa Accommodation</span>
                             </div>
 
-                            <!-- Villa Room Grid -->
                             <div class="p-3.5 space-y-3 bg-white">
                                 <div 
                                     v-for="room in villa.rooms" 
                                     :key="room.id"
-                                    class="border border-cream-200/60 rounded-lg p-3 bg-cream-50/30 hover:bg-amber-50/10 transition flex flex-col md:flex-row md:items-center justify-between gap-3"
+                                    class="border border-cream-200/60 rounded-lg p-3 bg-cream-50/30 flex items-center justify-start gap-2.5 overflow-x-auto no-scrollbar"
                                 >
-                                    <div class="flex items-center space-x-3">
+                                    <div class="flex items-center space-x-2 flex-shrink-0">
                                         <span class="text-[10px] font-bold text-cream-900 bg-cream-100 border border-cream-200 px-2.5 py-1 rounded">
                                             {{ room.label }}
                                         </span>
-                                        
-                                        <!-- Room members -->
-                                        <div class="flex flex-wrap gap-1.5">
-                                            <span 
-                                                v-for="member in room.members" 
-                                                :key="member"
-                                                class="text-[11px] bg-white border border-cream-200 px-2 py-0.5 rounded text-cream-800 font-semibold flex items-center shadow-xs"
-                                            >
-                                                <i class="fa-solid fa-user text-amber-500 text-[8px] mr-1"></i>{{ member }}
-                                            </span>
-                                        </div>
+                                    </div>
+                                    <div class="flex flex-nowrap gap-1.5 justify-start">
+                                        <span 
+                                            v-for="member in room.members" 
+                                            :key="member"
+                                            class="text-[11px] bg-white border border-cream-200 px-2 py-0.5 rounded text-cream-800 font-semibold flex items-center shadow-xs flex-shrink-0 whitespace-nowrap"
+                                        >
+                                            <i class="fa-solid fa-user text-amber-500 text-[8px] mr-1"></i>{{ member }}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -430,79 +288,18 @@
 
         </main>
 
-        <!-- Backup Attractions Drawer -->
-        <transition name="slide">
-            <div v-if="showBackupDrawer" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex justify-end">
-                <div class="w-4/5 max-w-sm bg-cream-50 h-full p-6 shadow-2xl flex flex-col">
-                    <div class="flex justify-between items-center border-b border-cream-200 pb-4">
-                        <h3 class="font-bold text-cream-900 text-xs flex items-center tracking-widest uppercase">
-                            <i class="fa-solid fa-box-archive text-amber-500 mr-2"></i> 備案景點參考
-                        </h3>
-                        <button @click="showBackupDrawer = false" class="text-gray-400 hover:text-cream-900">
-                            <i class="fa-solid fa-xmark text-lg"></i>
-                        </button>
-                    </div>
-
-                    <!-- Backup items list -->
-                    <div class="flex-1 overflow-y-auto no-scrollbar space-y-3 mt-4">
-                        <div 
-                            v-for="item in backups" 
-                            :key="item.id"
-                            class="bg-white border border-cream-200 p-3.5 rounded-xl transition shadow-sm relative"
-                        >
-                            <span class="absolute top-3 right-3 text-[8px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-bold">備用</span>
-                            <h4 class="font-bold text-xs text-cream-900 leading-tight">{{ item.title }}</h4>
-                            
-                            <!-- Suggested Stay Duration Badge -->
-                            <div class="mt-1.5 flex items-center space-x-1.5">
-                                <span class="text-[9px] bg-cream-200 text-cream-800 px-2 py-0.5 rounded font-bold flex items-center">
-                                    <i class="fa-solid fa-hourglass-half mr-1 text-amber-600"></i>
-                                    建議停留：{{ item.duration }}
-                                </span>
-                            </div>
-
-                            <p class="text-[10px] text-gray-500 mt-1 flex items-center">
-                                <i class="fa-solid fa-map-pin text-[8px] text-gray-400 mr-1"></i> {{ item.location }}
-                            </p>
-                            <p v-if="item.note" class="text-[10px] text-gray-400 mt-2 italic bg-cream-50 p-2 rounded-lg leading-relaxed">{{ item.note }}</p>
-                            
-                            <div class="mt-3 pt-2.5 border-t border-cream-100 flex justify-end">
-                                <a 
-                                    :href="'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(item.location)" 
-                                    target="_blank" 
-                                    class="text-[9px] font-bold text-cream-800 bg-cream-100 border border-cream-200 px-2.5 py-1.5 rounded"
-                                >
-                                    <i class="fa-solid fa-location-arrow mr-1 text-amber-600"></i> Google 導航
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-auto border-t border-cream-200 pt-4">
-                        <button 
-                            @click="showBackupDrawer = false" 
-                            class="w-full py-2 bg-cream-800 hover:bg-cream-900 text-cream-50 rounded-xl text-xs font-bold transition"
-                        >
-                            關閉選單
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </transition>
-
-        <!-- AI Food Recommendation Modal (附近攻略 / 知名美食 / 必點菜單) -->
+        <!-- Food & Drinks Modal Only (No Backup Attractions) -->
         <transition name="fade">
             <div v-if="showAIModal" class="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-end justify-center p-4">
-                <div class="bg-cream-100 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col border border-cream-200">
-                    <!-- Modal Header -->
+                <div class="bg-cream-100 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden max-h-[88vh] flex flex-col border border-cream-200">
                     <div class="p-5 bg-white border-b border-cream-200 flex justify-between items-center">
                         <div class="flex items-center space-x-2">
                             <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-500">
                                 <i class="fa-solid fa-wand-magic-sparkles"></i>
                             </div>
                             <div>
-                                <h4 class="font-bold text-cream-900 text-xs tracking-wider">嘉義市區美食與散策攻略</h4>
-                                <p class="text-[10px] text-amber-600 font-semibold">專屬特選必吃與必點指南</p>
+                                <h4 class="font-bold text-cream-900 text-xs tracking-wider">嘉義市區美食與手搖飲指南</h4>
+                                <p class="text-[10px] text-amber-600 font-semibold">特選排隊名店 ‧ 涼麵 ‧ 火雞肉飯 ‧ 冰品</p>
                             </div>
                         </div>
                         <button @click="showAIModal = false" class="text-gray-400 hover:text-cream-900">
@@ -510,56 +307,20 @@
                         </button>
                     </div>
 
-                    <!-- Modal Body / Content -->
                     <div class="flex-1 overflow-y-auto p-5 space-y-4">
-                        
-                        <!-- Gemini API Key Container -->
-                        <div class="bg-white p-3.5 rounded-xl border border-cream-200 text-[11px]">
-                            <div class="flex justify-between items-center cursor-pointer" @click="showApiKeyInput = !showApiKeyInput">
-                                <span class="font-bold text-cream-800"><i class="fa-solid fa-key mr-1 text-amber-500"></i> 使用個人 Gemini API Key 獲取最即時搜尋？</span>
-                                <i :class="showApiKeyInput ? 'fa-chevron-up' : 'fa-chevron-down'" class="fa-solid text-gray-400 text-[9px]"></i>
-                            </div>
-                            <div v-if="showApiKeyInput" class="mt-2.5 space-y-1.5">
-                                <input 
-                                    type="password" 
-                                    v-model="customApiKey"
-                                    placeholder="貼上您的 Gemini API Key (可留空，已預載完整嘉義必吃名單)" 
-                                    class="w-full p-2 bg-cream-50 border border-cream-200 rounded-lg focus:outline-none focus:border-amber-500 text-[11px]"
-                                >
-                                <p class="text-[9px] text-gray-400 leading-normal">留空時，系統會自動使用內建的高品質口碑推薦指南（包含公園涼麵、多間排隊火雞肉飯等）。輸入金鑰後會利用 Google Grounding 進行即時資訊搜尋。</p>
-                            </div>
-                        </div>
-
-                        <!-- Loading State -->
-                        <div v-if="aiLoading" class="py-12 flex flex-col items-center justify-center space-y-3">
-                            <div class="relative w-10 h-10">
-                                <div class="absolute inset-0 rounded-full border-4 border-amber-100 border-t-amber-500 animate-spin"></div>
-                            </div>
-                            <p class="text-xs text-cream-800 font-medium">美食攻略搜尋中...</p>
-                            <p class="text-[9px] text-gray-400 animate-pulse">調用 Google 搜尋精準在地口碑情報...</p>
-                        </div>
-
-                        <!-- Error State -->
-                        <div v-else-if="aiError" class="bg-red-50 text-red-600 p-4 rounded-xl text-xs text-center border border-red-100">
-                            <i class="fa-solid fa-triangle-exclamation text-base mb-1 block"></i>
-                            <p class="font-bold">連線失敗，自動為您加載預載美食推薦</p>
-                        </div>
-
-                        <!-- AI Response Result Display (Japanese Elegant Styling) -->
                         <div v-if="!aiLoading && aiResult" class="space-y-4">
-                            
-                            <!-- 1. 附近攻略 (極簡淡雅卡片) -->
+                            <!-- 1. 散策攻略 -->
                             <div class="bg-white p-4 rounded-xl border border-cream-200 shadow-sm">
                                 <h5 class="text-xs font-bold text-cream-900 border-b border-cream-200 pb-2 mb-2 flex items-center">
-                                    <span class="w-1.5 h-3 bg-amber-500 mr-2 rounded-full"></span> 附近攻略
+                                    <span class="w-1.5 h-3 bg-amber-500 mr-2 rounded-full"></span> 市區吃飽散策攻略
                                 </h5>
                                 <p class="text-xs text-cream-800 leading-relaxed whitespace-pre-wrap">{{ aiResult.guide }}</p>
                             </div>
 
-                            <!-- 2. 知名美食 (和風經典卡片) -->
+                            <!-- 2. 知名美食與手搖飲 -->
                             <div class="bg-amber-50 border border-amber-200/60 p-4 rounded-xl">
                                 <h5 class="text-xs font-bold text-amber-800 pb-2 mb-2 border-b border-amber-200/40 flex items-center">
-                                    <i class="fa-solid fa-bowl-food text-amber-500 mr-2"></i> 知名美食推薦
+                                    <i class="fa-solid fa-bowl-food text-amber-500 mr-2"></i> 知名美食與手搖飲推薦
                                 </h5>
                                 <div class="flex flex-col space-y-2">
                                     <span 
@@ -574,11 +335,8 @@
 
                             <!-- 3. 必點菜單 -->
                             <div class="bg-stone-100 border border-stone-200 p-4 rounded-xl relative overflow-hidden">
-                                <div class="absolute top-0 right-0 w-8 h-8 bg-stone-200 rounded-bl-full flex items-center justify-end pr-1.5 pt-1 text-[9px] text-stone-600">
-                                    <i class="fa-solid fa-utensils"></i>
-                                </div>
                                 <h5 class="text-xs font-bold text-cream-900 pb-2 mb-2 border-b border-stone-200 flex items-center">
-                                    <i class="fa-solid fa-check-to-slot text-amber-600 mr-2"></i> 必點菜單
+                                    <i class="fa-solid fa-check-to-slot text-amber-600 mr-2"></i> 必點菜單與點法秘訣
                                 </h5>
                                 <div class="space-y-2">
                                     <div 
@@ -591,79 +349,25 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Citation sources if generated via search -->
-                            <div v-if="aiSources && aiSources.length > 0" class="pt-2">
-                                <span class="text-[8px] text-gray-400 font-bold uppercase tracking-wider block mb-1">參考搜尋來源</span>
-                                <div class="flex flex-wrap gap-1">
-                                    <a 
-                                        v-for="(source, idx) in aiSources" 
-                                        :key="idx"
-                                        :href="source.uri" 
-                                        target="_blank"
-                                        class="text-[8px] bg-white border border-cream-200 px-2 py-0.5 rounded text-gray-500 hover:text-amber-600 transition"
-                                    >
-                                        {{ source.title || '搜尋數據庫' }} <i class="fa-solid fa-external-link text-[7px] ml-0.5"></i>
-                                    </a>
-                                </div>
-                            </div>
-
                         </div>
                     </div>
 
-                    <!-- Modal Footer -->
                     <div class="p-4 bg-white border-t border-cream-200 flex justify-end">
-                        <button @click="showAIModal = false" class="text-xs text-cream-800 font-bold px-4 py-2 hover:bg-cream-100 rounded-xl transition">關閉攻略</button>
+                        <button @click="showAIModal = false" class="text-xs text-cream-800 font-bold px-4 py-2 hover:bg-cream-100 rounded-xl transition">關閉指南</button>
                     </div>
                 </div>
             </div>
         </transition>
 
-        <!-- Bottom Elegant Navigation Bar -->
-        <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-cream-200 py-3.5 px-6 flex justify-around items-center z-40 shadow-lg">
-            <button 
-                @click="activeTab = 'day1'" 
-                :class="activeTab === 'day1' ? 'text-amber-600' : 'text-gray-400'"
-                class="flex flex-col items-center space-y-1 transition"
-            >
-                <i class="fa-solid fa-tree text-base"></i>
-                <span class="text-[9px] font-bold">第一天 (10/2)</span>
-            </button>
-            <button 
-                @click="activeTab = 'day2'" 
-                :class="activeTab === 'day2' ? 'text-amber-600' : 'text-gray-400'"
-                class="flex flex-col items-center space-y-1 transition"
-            >
-                <i class="fa-solid fa-mountain text-base"></i>
-                <span class="text-[9px] font-bold">第二天 (10/3)</span>
-            </button>
-            <button 
-                @click="activeTab = 'rooms'" 
-                :class="activeTab === 'rooms' ? 'text-amber-600' : 'text-gray-400'"
-                class="flex flex-col items-center space-y-1 transition"
-            >
-                <i class="fa-solid fa-bed text-base"></i>
-                <span class="text-[9px] font-bold">分房表</span>
-            </button>
-            <button 
-                @click="showBackupDrawer = true" 
-                :class="showBackupDrawer ? 'text-amber-600' : 'text-gray-400'"
-                class="flex flex-col items-center space-y-1 transition"
-            >
-                <i class="fa-solid fa-box-archive text-base"></i>
-                <span class="text-[9px] font-bold">備用景點</span>
-            </button>
-        </nav>
-
     </div>
 
-    <!-- Vue.js Logic script -->
+    <!-- Vue App Logic -->
     <script>
         const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
 
         createApp({
             setup() {
-                // Highly polished itinerary based on the user's specific request, image_a09b90.png and subsequent feedback
+                // Main Itinerary Array with High Speed Rail Details & Exact Updated Times
                 const itinerary = ref([
                     // Day 1: 10/2 (五)
                     {
@@ -671,19 +375,19 @@
                         day: 1,
                         time: '07:50',
                         type: 'transport',
-                        title: '高鐵站集合',
-                        location: '台北市南港區/萬華區/中正區高鐵站',
-                        note: '台北或南港站集合準備。',
+                        title: '台北高鐵站集合',
+                        location: '台北高鐵站',
+                        note: '請至 <strong class="font-bold text-[#b83826]">東三門</strong> 集合，準備搭乘高鐵前往嘉義。',
                         coords: null
                     },
                     {
                         id: 2,
                         day: 1,
-                        time: '08:00 - 09:30',
+                        time: '08:01 - 09:28',
                         type: 'transport',
-                        title: '出發',
-                        location: '高鐵北往南行駛路線',
-                        note: '高鐵車程時間約1.5小時。車上請大家放鬆休息！',
+                        title: '高鐵出發（台北 ➔ 嘉義）',
+                        location: '台北至嘉義高鐵路線',
+                        note: '<strong class="text-[#c85240] font-bold block mb-1">車次：1305（08:01 - 09:28）</strong>車程約 1 小時 27 分鐘，車上請大家放鬆休息！',
                         coords: null
                     },
                     {
@@ -691,79 +395,80 @@
                         day: 1,
                         time: '09:40',
                         type: 'transport',
-                        title: '抵達嘉義高鐵',
+                        title: '嘉義高鐵站集合',
                         location: '嘉義縣太保市高鐵西路168號',
-                        note: '嘉義站集合，準備轉乘遊覽車。',
-                        coords: [23.4598, 120.3235]
+                        note: '抵達嘉義高鐵站出站集合，搭乘遊覽車準備前往故宮南院。',
+                        coords: [23.4598, 120.3235],
+                        hideNavButton: true
                     },
                     {
                         id: 4,
                         day: 1,
                         time: '10:15 - 11:45',
                         type: 'attraction',
-                        title: '自由活動',
-                        location: '嘉義市東區林森東路1號 (檜意森活村與森林之歌周邊)',
-                        note: '抵達市區自由活動。可點擊展開下方的「美食推薦」攻略，輕鬆遊逛檜意森活村、市區與森林之歌。',
-                        coords: [23.4861, 120.4545]
+                        title: '故宮南院',
+                        location: '嘉義縣太保市故宮大道888號',
+                        note: '<strong class="text-[#c85240] font-bold block mb-1">已預約，將由小安於現場統一領取團體門票並發放個人語音導覽機。</strong><span class="block mt-1 text-cream-800 leading-normal">邀請大家一同欣賞故宮南院流線型的現代水墨宏偉建築，享受充實愜意的文藝晨光。</span>',
+                        coords: [23.4715, 120.2942]
                     },
                     {
                         id: 5,
                         day: 1,
-                        time: '11:55',
+                        time: '11:50',
                         type: 'transport',
-                        title: '林聰明外集合',
-                        location: '嘉義市東區中正路361號',
-                        note: '請準時於林聰明沙鍋魚頭店外集合，準備入座享用午餐。',
-                        coords: [23.4784, 120.4498]
+                        title: '集合並前往嘉義市區',
+                        location: '嘉義市區',
+                        note: '故宮南院集合搭車，前往嘉義市區享用午餐。',
+                        coords: null
                     },
                     {
                         id: 6,
                         day: 1,
-                        time: '12:00 - 14:00',
+                        time: '12:30 - 14:30',
                         type: 'restaurant',
-                        title: '午餐 - 林聰明沙鍋魚頭',
+                        title: '午餐 - 林聰明砂鍋魚頭',
                         location: '嘉義市東區中正路361號',
-                        note: '品嚐傳承三代的傳奇砂鍋魚頭，濃郁的沙茶湯底搭配新鮮大頭鰱魚，給您最頂級的嘉義在地美味！預留 2 小時充裕用餐與聊天的時光。',
+                        note: '<strong class="text-[#c85240] font-bold block mb-1">已預約並配好餐</strong><span class="block mt-1 text-cream-800 leading-normal">品嚐傳承三代的傳奇砂鍋魚頭，濃郁特製沙茶湯底搭配鮮美大頭鰱魚與豐富食材，為您帶來最頂級且令人回味無窮的嘉義在地美味！</span>',
                         coords: [23.4784, 120.4498]
                     },
                     {
                         id: 7,
                         day: 1,
-                        time: '14:30 - 16:30',
+                        time: '15:00 - 16:00',
                         type: 'attraction',
-                        title: '三隻小豬觀光農場',
-                        location: '嘉義縣民雄鄉民新路369號',
-                        note: '非常適合家庭與親子的休閒農場！園區內能近距離接觸溫馴可愛的小動物、漫遊落羽松步道，並設有豐富的裝置藝術與遊樂設施。',
-                        coords: [23.5359, 120.4357]
+                        title: '嘉義酒類文物館',
+                        location: '621嘉義縣民雄鄉福樂村中山路3號',
+                        note: '<strong class="text-[#c85240] font-bold block mb-1">免門票，無需預約，可自由入場參觀導覽。</strong><span class="block mt-1 text-cream-800 leading-normal">走訪高粱酒的故鄉，館內展出豐富酒器與百年高粱釀造文化，感受獨特的酒香氛圍。</span>',
+                        coords: [23.5303, 120.4345]
                     },
                     {
                         id: 8,
                         day: 1,
-                        time: '17:00 - 17:30',
+                        time: '16:15 - 17:15',
                         type: 'attraction',
-                        title: '旺萊山鳳梨文化園區',
-                        location: '嘉義縣民雄鄉神農路1-3號',
-                        note: '品嚐免費神農鳳梨酥與鳳梨醋，漫步在無際的民雄鳳梨田中。',
-                        coords: [23.5607, 120.4687]
+                        title: '民雄鬼屋咖啡／劉氏古厝民雄鬼屋',
+                        location: '嘉義縣民雄鄉興中村義橋12-1號',
+                        note: '探訪著名古蹟日治時期洋樓「劉氏古厝」，並可在緊鄰的鬼屋咖啡品嚐下午茶、咖啡與特調飲料，享受神秘又帶點愜意古樸的氣氛。',
+                        coords: [23.5386, 120.4501]
                     },
                     {
                         id: 9,
                         day: 1,
-                        time: '17:40',
+                        time: '17:35',
                         type: 'hotel',
-                        title: 'Check in 日見山民宿',
-                        location: '621嘉義縣民雄鄉東興村25-6號',
-                        note: '抵達溫馨日見山民宿辦理入住，安置行李並享受舒適氛圍。本區包棟相鄰四棟，全棟規劃兩人一房（四人房型），空間寬敞舒適，並請遵守全館禁菸規定。',
+                        title: '辦理入住 日見山民宿',
+                        location: '621嘉義縣民雄鄉東興村葉子寮25-6號',
+                        note: '抵達溫馨日見山民宿辦理入住，安置行李並享受舒適氛圍。全棟規劃兩人一房（四人房型），請遵守全館禁菸規定。<span class="block mt-1.5 font-bold text-[#c85240] leading-relaxed">💡 溫馨提醒：<br>民宿皆有提供毛巾、浴巾、沐浴乳、洗髮精及吹風機；為響應環保，建議個人一次性牙膏牙刷盡量自行攜帶（若忘記攜帶，民宿現場亦可提供）。</span>',
                         coords: [23.5358, 120.4287]
                     },
                     {
                         id: 10,
                         day: 1,
-                        time: '18:30',
+                        time: '18:00',
                         type: 'restaurant',
                         title: '晚餐 - 民宿內代烤串燒攤車',
-                        location: '621嘉義縣民雄鄉東興村25-6號',
-                        note: '今晚重頭戲！特別安排專業烤肉團隊在民宿內進行現場代烤服務。各位同仁完全不用自己動手，即可輕鬆享用源源不絕的現烤肉串與豐富烤物，盡情放鬆舉杯暢聊！',
+                        location: '621嘉義縣民雄鄉東興村葉子寮25-6號',
+                        note: '今晚重頭戲！特別安排專業烤肉團隊在民宿內進行現場代烤服務。各位同仁不用自己動手，即可輕鬆享用源源不絕的現烤肉串與美味食材！',
                         coords: [23.5358, 120.4287],
                         hideNavButton: true
                     },
@@ -772,20 +477,20 @@
                     {
                         id: 20,
                         day: 2,
-                        time: '07:30',
+                        time: '08:00',
                         type: 'restaurant',
-                        title: '開放領取早餐',
+                        title: '早餐 - A-bao 阿寶早午餐',
                         location: '日見山民宿大廳',
-                        note: '大廳準備了精心為大家挑選的嘉義特色在地美味早餐，請同仁們起床後前往民宿一樓領取享用。',
+                        note: '大廳準備了美味的 A-bao 阿寶早午餐，請同仁們起床後前往民宿一樓領取享用。',
                         coords: null
                     },
                     {
                         id: 11,
                         day: 2,
-                        time: '08:40',
+                        time: '09:15',
                         type: 'transport',
                         title: '退房與集合',
-                        location: '621嘉義縣民雄鄉東興村25-6號',
+                        location: '日見山 621嘉義縣民雄鄉東興村葉子寮25-6號',
                         note: '行李收妥辦理退房，準備搭乘遊覽車出發！',
                         coords: [23.5358, 120.4287],
                         hideNavButton: true
@@ -793,144 +498,142 @@
                     {
                         id: 12,
                         day: 2,
-                        time: '09:00',
+                        time: '09:30',
                         type: 'transport',
                         title: '出發',
-                        location: '日見山 621嘉義縣民雄鄉東興村25-6號',
-                        note: '由民宿出發，車上短暫休息、準備前往故宮南院。',
+                        location: '日見山 621嘉義縣民雄鄉東興村葉子寮25-6號',
+                        note: '由民宿出發，搭乘遊覽車前往嘉義市區。',
                         coords: [23.5358, 120.4287],
                         hideNavButton: true
                     },
                     {
                         id: 13,
                         day: 2,
-                        time: '10:00 - 11:30',
+                        time: '10:10 - 12:00',
                         type: 'attraction',
-                        title: '故宮南院',
-                        location: '嘉義縣太保市故宮大道888號',
-                        note: '一同欣賞故宮南院流線型的現代水墨宏偉建築。園區展出亞洲藝術文化瑰寶，搭配湖畔倒影與優雅庭園，讓大家悠閒漫步其中，享受愜意的文藝時光。',
-                        coords: [23.4715, 120.2942]
+                        title: '檜意森活村 ‧ 市區藝文散策',
+                        location: '嘉義市東區林森東路26號',
+                        note: '漫步於全台灣最大規模的日式官舍建築群，感受濃厚的歷史檜木木香與文創氛圍。',
+                        coords: [23.4870, 120.4552]
                     },
                     {
                         id: 14,
                         day: 2,
-                        time: '11:45 - 13:00',
-                        type: 'restaurant',
-                        title: '午餐 - 采荷居人文茶館',
-                        location: '嘉義縣太保市雅祥街7-1號',
-                        note: '品嚐中式古風精緻套餐與茶品，放鬆休息。',
-                        coords: [23.4593, 120.2917]
+                        time: '12:10',
+                        type: 'transport',
+                        title: '集合前往餐廳',
+                        location: '嘉義市區',
+                        note: '於檜意森活村集合搭車，前往竹居茶樓享用精緻午宴。',
+                        coords: null
                     },
                     {
                         id: 15,
                         day: 2,
-                        time: '13:30 - 16:00',
-                        type: 'attraction',
-                        title: '向禾休閒漁場',
-                        location: '嘉義縣東石鄉四股社區60號',
-                        note: '東石著名的環保生態漁場，親自體驗划船、撈海菜、烤鮮蚵、釣魚捕魚等豐富有趣的在地漁村生態特色活動。',
-                        coords: [23.4533, 120.1506]
+                        time: '12:30 - 14:30',
+                        type: 'restaurant',
+                        title: '午餐 - 竹居茶樓',
+                        location: '嘉義市東區大雅路二段275號',
+                        note: '<strong class="text-[#c85240] font-bold block mb-1">已預訂桌菜</strong><span class="block mt-1 text-cream-800 leading-normal">品嚐桌菜，漫步於古色古香的江南園林建築，伴隨著錦鯉池畔美景，享受愜意典雅的午宴。</span>',
+                        coords: [23.4756, 120.4722]
                     },
                     {
                         id: 16,
                         day: 2,
-                        time: '16:30 - 19:30',
-                        type: 'restaurant',
-                        title: '晚餐 - 蚵老大海鮮吃到飽',
-                        location: '嘉義縣東石鄉東石村彩霞大道旁',
-                        note: '享受整整 3 小時超澎派的鮮蚵海鮮吃到飽！特別提醒同仁，鮮蚵及海鮮千萬要完全烤熟、嚴禁生食，以維護飲食安全與身體健康。在暢快飽餐的同時，還能一邊在餐廳內悠閒欣賞浪漫唯美的東石漁港夕陽落日餘暉，為本次員旅畫下完美句點！',
-                        coords: [23.4521, 120.1472]
+                        time: '15:00 - 17:00',
+                        type: 'attraction',
+                        title: '菁寮老街',
+                        location: '台南市後壁區菁寮里菁寮老街',
+                        note: '走訪《無米樂》故鄉與電視劇《俗女養成記》拍攝場景，漫步於充滿懷舊農村風情的老街、茄芷工坊與金德興藥舖，體驗古早味傳統美食。',
+                        coords: [23.3783, 120.3341]
                     },
                     {
                         id: 17,
                         day: 2,
-                        time: '20:00',
-                        type: 'transport',
-                        title: '抵達嘉義高鐵',
-                        location: '嘉義縣太保市高鐵西路168號',
-                        note: '抵達高鐵站，準備整理行李、核對個人物品並稍作休息。',
-                        coords: [23.4598, 120.3235]
+                        time: '17:40 - 19:40',
+                        type: 'restaurant',
+                        title: '晚餐 - 蚵老大海鮮碳烤',
+                        location: '614嘉義縣東石鄉東石村觀海三路307號',
+                        note: '<strong class="text-[#c85240] font-bold block mb-1">已預訂桌菜</strong><span class="block mt-1 text-cream-800 leading-normal">享受澎派的美味海鮮桌菜！用餐時還能欣賞東石漁港唯美夕陽餘暉！</span>',
+                        coords: [23.4503, 120.1479]
                     },
                     {
                         id: 18,
+                        day: 2,
+                        time: '20:10',
+                        type: 'transport',
+                        title: '抵達嘉義高鐵站',
+                        location: '嘉義縣太保市高鐵西路168號',
+                        note: '抵達嘉義高鐵站，核對個人物品並整理行李，準備搭車返程。',
+                        coords: [23.4598, 120.3235]
+                    },
+                    {
+                        id: 19,
                         day: 2,
                         time: '20:32',
                         type: 'transport',
                         title: '嘉義高鐵出發',
                         location: '嘉義高鐵站出發',
-                        note: '搭乘班次返程，結束收穫滿滿的嘉義之旅。',
+                        note: '<strong class="text-[#c85240] font-bold block mb-1">車次：0684（20:32 - 21:59）</strong>車程約 1 小時 27 分鐘，車上請大家放鬆休息！',
                         coords: [23.4598, 120.3235]
+                    },
+                    {
+                        id: 19,
+                        day: 2,
+                        time: '20:32',
+                        type: 'transport',
+                        title: '嘉義高鐵出發',
+                        location: '嘉義高鐵站出發',
+                        note: '<strong class="text-amber-600 font-bold block mb-1">車次：0684（20:32 - 21:59）</strong>車程約 1 小時 27 分鐘，車上請大家放鬆休息！',
+                        coords: [23.4598, 120.3235]
+                    },
+                    {
+                        id: 21,
+                        day: 2,
+                        time: '21:59',
+                        type: 'transport',
+                        title: '抵達台北車站',
+                        location: '台北車站',
+                        note: '順利抵達台北車站，平安賦歸，結束豐富圓滿的員工之旅！',
+                        coords: null
                     }
                 ]);
 
-                // Tour Bus and Walk Travel Times between sequential events
+                // Tour Bus Travel Times between sequential events
                 const busTravelTimes = {
-                    3: { type: 'bus', time: 30 },  // HSR Chiayi to Hinoki Village
-                    4: { type: 'walk', time: 10 }, // Hinoki Village to smartfish (Walking)
-                    6: { type: 'bus', time: 25 },  // Smartfish to Three Little Pigs
-                    7: { type: 'bus', time: 25 },  // Three Little Pigs to Pineapple Hill
-                    8: { type: 'bus', time: 10 },  // Pineapple Hill to Rijiashan Minshuku
+                    3: { type: 'bus', time: 15 },  // 嘉義高鐵站 ➔ 故宮南院 (15 分鐘)
+                    5: { type: 'bus', time: 40 },  // 故宮南院 ➔ 林聰明砂鍋魚頭 (40 分鐘)
+                    6: { type: 'bus', time: 25 },  // 林聰明砂鍋魚頭 ➔ 嘉義酒類文物館 (25 分鐘)
+                    7: { type: 'bus', time: 15 },  // 嘉義酒類文物館 ➔ 民雄鬼屋咖啡 (15 分鐘)
+                    8: { type: 'bus', time: 25 },  // 民雄鬼屋咖啡 ➔ 日見山民宿 (25 分鐘)
                     // Day 2
-                    12: { type: 'bus', time: 35 }, // 09:00 Departure to Southern Branch of NPM
-                    13: { type: 'bus', time: 10 }, // Southern Branch to Caiheju Restaurant
-                    14: { type: 'bus', time: 30 }, // Caiheju Restaurant to Xianghe Fishery
-                    15: { type: 'bus', time: 10 }, // Xianghe Fishery to Kelao Seafood
-                    16: { type: 'bus', time: 30 }  // Kelao Seafood to HSR Chiayi
+                    12: { type: 'bus', time: 40 }, // 日見山民宿 ➔ 檜意森活村 (40 分鐘)
+                    14: { type: 'bus', time: 15 }, // 檜意森活村 ➔ 竹居茶樓 (15 分鐘)
+                    15: { type: 'bus', time: 35 }, // 竹居茶樓 ➔ 菁寮老街 (35 分鐘)
+                    16: { type: 'bus', time: 45 }, // 菁寮老街 ➔ 蚵老大海鮮碳烤 (45 分鐘)
+                    17: { type: 'bus', time: 35 }  // 蚵老大海鮮碳烤 ➔ 嘉義高鐵站 (35 分鐘)
                 };
 
                 const getNextTravelTime = (itemId) => {
                     return busTravelTimes[itemId] || null;
                 };
 
-                // Backup attractions (including Museum of Ancient Taiwan Tiles and Chiayi Old Prison)
-                const backups = ref([
-                    {
-                        id: 101,
-                        title: '台灣花磚博物館',
-                        location: '嘉義市西區林森西路282號',
-                        duration: '1.5 小時',
-                        note: '世界級的古圖花磚收藏！修復保存了數千片珍貴的日治時期手工彩繪花磚，充滿濃厚復古和風文藝感。'
-                    },
-                    {
-                        id: 102,
-                        title: '嘉義舊監獄',
-                        location: '嘉義市東區維新路140號',
-                        duration: '2 小時',
-                        note: '全台唯一完整保存的日治時期監獄建築（獄政博物館），具高度歷史與日式木構建築美學價值，極具教育與漫步感。'
-                    },
-                    {
-                        id: 103,
-                        title: '北門驛 & 北門森鐵故事館',
-                        location: '嘉義市東區共和路239號',
-                        duration: '1 小時',
-                        note: '難得一見的阿里山森林鐵路木造車站，帶有淡淡極致檜木香。'
-                    },
-                    {
-                        id: 104,
-                        title: '阿里山森林鐵路車庫園區',
-                        location: '嘉義市東區林森東路2號',
-                        duration: '1.5 小時',
-                        note: '阿里山小火車的大本營！園區內展示各種退役的蒸汽火車頭、轉車台與歷史車廂，是鐵道迷與漫步放鬆的絕佳綠意景點。'
-                    }
-                ]);
-
-                // Villa room assignments directly updated from user file image_3aaa83.png with no room codes, only clean A-D layout
+                // Villa room assignments
                 const villas = ref([
                     {
                         name: '第一棟 (6號)',
                         rooms: [
                             { id: 'A', label: '房 A', members: ['陳佳鈴副總'] },
-                            { id: 'B', label: '房 B', members: ['林文君', '張麗清'] },
-                            { id: 'C', label: '房 C', members: ['王曉晴', '張瓊姚'] },
-                            { id: 'D', label: '房 D', members: ['待確認'] }
+                            { id: 'B', label: '房 B', members: ['林文君'] },
+                            { id: 'C', label: '房 C', members: ['張麗清'] },
+                            { id: 'D', label: '房 D', members: ['王曉晴', '張瓊姚'] }
                         ]
                     },
                     {
                         name: '第二棟 (7號)',
                         rooms: [
-                            { id: 'A', label: '房 A', members: ['林君蔆'] },
+                            { id: 'A', label: '房 A', members: ['彭瑜瑋'] },
                             { id: 'B', label: '房 B', members: ['林佳瑩', '曾柏雅'] },
-                            { id: 'C', label: '房 C', members: ['彭瑜瑋', '林慧娟'] },
+                            { id: 'C', label: '房 C', members: ['林慧娟', '林君蔆'] },
                             { id: 'D', label: '房 D', members: ['陳郁婷', '林俊廷'] }
                         ]
                     },
@@ -940,7 +643,7 @@
                             { id: 'A', label: '房 A', members: ['鄭文慷', '鄭歆妍'] },
                             { id: 'B', label: '房 B', members: ['陳思妤', '鄭歆妮'] },
                             { id: 'C', label: '房 C', members: ['柯韋任', '張羽綉', '柯炘語'] },
-                            { id: 'D', label: '房 D', members: ['邱伯煥'] }
+                            { id: 'D', label: '房 D', members: ['邱伯煥', '黃卉汝', '邱奕菲', '邱奕勛'] }
                         ]
                     },
                     {
@@ -954,42 +657,50 @@
                     }
                 ]);
 
-                // Tab selection - 'day1', 'day2', 'rooms'
+                // Active tab - 'day1', 'day2', 'rooms'
                 const activeTab = ref('day1');
 
-                // Drawer & Modal Controls
-                const showBackupDrawer = ref(false);
+                // Modal Controls
                 const showAIModal = ref(false);
-                const showApiKeyInput = ref(false);
-                const showDay1LunchBackup = ref(false);
-                const showDay2LunchBackup = ref(false);
-                const showXiangheNotes = ref(false);
-                const customApiKey = ref('');
 
                 // Weather API
                 const currentTemp = ref('26');
                 const weatherIcon = ref('fa-solid fa-cloud-sun text-amber-500');
+                const isWeatherLoading = ref(false);
 
-                // Leaflet Map Handles
-                let map = null;
-                let markersGroup = null;
-                let routeLine = null;
-                const userLocation = ref(null);
-                let userMarker = null;
-
-                // AI Guide state variables
+                // AI Food Guide Data
                 const aiLoading = ref(false);
-                const aiResult = ref(null);
-                const aiSources = ref([]);
-                const aiError = ref('');
+                const aiResult = ref({
+                    guide: "「嘉義市區」是享譽全台的美食木都！不論是第一天中午或第二天市區散策，同仁可於文化路商圈、中正路及檜意森活村周邊自由漫步，尋訪在地指標性的涼麵、排隊火雞肉飯名店與限定手搖飲！",
+                    food: [
+                        "源興御香屋 二店 (二店排隊人潮較少，買葡萄柚綠茶的朝聖首選！)",
+                        "公園涼麵 (嘉義特有美乃滋寬麵涼麵，搭配美乃滋與蒜泥，香濃爽口)",
+                        "民主火雞肉飯 (純紅蔥頭油提味，香氣醇厚獨特，深受口碑推崇)",
+                        "阿宏師火雞肉飯 (肉質肥厚多汁，火雞肉片飯搭配半熟蛋是極品組合)",
+                        "阿樓師火雞肉飯 (晚餐宵夜名店，醬汁甘甜，豬血湯與切盤小菜大推)",
+                        "正統火雞肉飯 (高 CP 值在地人口袋名單，火雞片飯與手作涼菜必點)",
+                        "南門涼肉圓 (嘉義限定！冰鎮涼肉圓淋上特調美乃滋醬油，酷暑首選)",
+                        "品安豆花 (古法手工豆花，口感極致綿密，結合焦糖冰沙清甜香濃)",
+                        "一涼製冰所 (文青日系冰磚，脆皮餅乾夾香濃厚實冰淇淋，超夯小點)"
+                    ],
+                    mustOrder: [
+                        "御香屋二店：招牌紅鑽葡萄柚綠茶 (建議微冰少糖，並務必加一顆話梅調味)",
+                        "公園涼麵：招牌寬涼麵 (必加蒜泥與美乃滋)、古早味肉骨酥湯",
+                        "民主火雞肉飯：火雞肉片飯 + 當歸鴨湯、特製綜合涼菜",
+                        "阿宏師：火雞肉片飯 + 半熟荷包蛋 (輕戳破蛋黃拌入蔥油米飯美味絕頂)",
+                        "阿樓師：火雞肉絲飯、乾切生肉片、味噌湯",
+                        "正統：火雞肉片飯、涼拌粉豬肝、金針排骨湯",
+                        "南門涼肉圓：招牌冰涼肉圓 (淋特調美乃滋醬)、香 Q 涼粉條",
+                        "品安豆花：綜合豆花 (推薦選焦糖冰沙底加上特製地瓜圓)",
+                        "一涼製冰所：泰式奶茶冰磚、草莓餅乾冰磚"
+                    ]
+                });
 
-                // Compute itinerary for the active day
                 const currentDayItinerary = computed(() => {
                     const dayNum = activeTab.value === 'day1' ? 1 : 2;
                     return itinerary.value.filter(item => item.day === dayNum);
                 });
 
-                // Style utils
                 const getTypeBadgeStyle = (type) => {
                     switch (type) {
                         case 'attraction': return 'bg-amber-100 text-amber-800';
@@ -1020,129 +731,8 @@
                     return dict[type] || '行程';
                 };
 
-                // Geolocation API
-                const locateUser = () => {
-                    if (!navigator.geolocation) return;
-
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            const lat = position.coords.latitude;
-                            const lng = position.coords.longitude;
-                            userLocation.value = [lat, lng];
-
-                            if (map) {
-                                if (userMarker) {
-                                    userMarker.setLatLng(userLocation.value);
-                                } else {
-                                    const userIcon = L.divIcon({
-                                        html: '<div class="w-3.5 h-3.5 bg-blue-500 border-2 border-white rounded-full animate-pulse shadow-md"></div>',
-                                        className: 'custom-user-marker',
-                                        iconSize: [14, 14]
-                                    });
-                                    userMarker = L.marker(userLocation.value, { icon: userIcon }).addTo(map);
-                                    userMarker.bindPopup('您的目前位置').openPopup();
-                                }
-                                map.setView(userLocation.value, 13);
-                            }
-                        },
-                        (error) => {
-                            console.error('無法取得位置', error);
-                        },
-                        { enableHighAccuracy: true }
-                    );
-                };
-
-                const focusMap = () => {
-                    if (map) {
-                        const element = document.getElementById('map');
-                        if (element) {
-                            element.scrollIntoView({ behavior: 'smooth' });
-                        }
-                    }
-                };
-
-                // Leaflet Map Initialization
-                const initMap = () => {
-                    const mapEl = document.getElementById('map');
-                    if (!mapEl) return;
-
-                    map = L.map('map', {
-                        zoomControl: true,
-                        attributionControl: false
-                    }).setView([23.4801, 120.4491], 12);
-
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                        maxZoom: 20
-                    }).addTo(map);
-
-                    markersGroup = L.layerGroup().addTo(map);
-                    updateMapMarkers();
-                };
-
-                const updateMapMarkers = () => {
-                    if (!map || !markersGroup) return;
-
-                    markersGroup.clearLayers();
-                    if (routeLine) {
-                        map.removeLayer(routeLine);
-                        routeLine = null;
-                    }
-
-                    const points = [];
-                    let plotIndex = 0;
-                    
-                    currentDayItinerary.value.forEach((item) => {
-                        if (item.coords) {
-                            points.push(item.coords);
-                            plotIndex++;
-
-                            const colorClass = getTypeDotColor(item.type);
-                            const markerHtml = `
-                                <div class="relative flex items-center justify-center w-8 h-8 rounded-full bg-white border border-cream-300 shadow-md">
-                                    <div class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-cream-800 bg-cream-100">
-                                        ${plotIndex}
-                                    </div>
-                                    <div class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white flex items-center justify-center ${colorClass}"></div>
-                                </div>
-                            `;
-
-                            const customIcon = L.divIcon({
-                                html: markerHtml,
-                                className: 'custom-map-pin',
-                                iconSize: [32, 32],
-                                iconAnchor: [16, 16]
-                            });
-
-                            const popupContent = `
-                                <div class="p-1">
-                                    <h4 class="font-bold text-cream-900 text-xs">${item.title}</h4>
-                                    <p class="text-[9px] text-amber-600 font-mono mt-0.5"><i class="fa-solid fa-clock"></i> ${item.time}</p>
-                                    <p class="text-[9px] text-gray-500 mt-0.5">${item.location}</p>
-                                    <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(item.location)}" target="_blank" class="block mt-2 text-center text-[9px] bg-cream-800 text-cream-50 py-1 rounded">路線導航</a>
-                                </div>
-                            `;
-
-                            L.marker(item.coords, { icon: customIcon })
-                                .bindPopup(popupContent)
-                                .addTo(markersGroup);
-                        }
-                    });
-
-                    if (points.length > 1) {
-                        routeLine = L.polyline(points, {
-                            color: '#D4A373',
-                            weight: 3,
-                            opacity: 0.8,
-                            dashArray: '5, 8'
-                        }).addTo(map);
-
-                        map.fitBounds(L.latLngBounds(points), { padding: [40, 40] });
-                    } else if (points.length === 1) {
-                        map.setView(points[0], 14);
-                    }
-                };
-
                 const fetchWeather = async () => {
+                    isWeatherLoading.value = true;
                     try {
                         const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=23.4801&longitude=120.4491&current_weather=true');
                         if (response.ok) {
@@ -1158,154 +748,27 @@
                             else weatherIcon.value = 'fa-solid fa-cloud-showers-heavy text-indigo-400';
                         }
                     } catch (error) {
-                        console.error('無法讀取天氣 API', error);
+                        console.error('天氣 API 讀取失敗', error);
                         currentTemp.value = '26';
+                    } finally {
+                        isWeatherLoading.value = false;
                     }
                 };
 
-                // Handcrafted premium food database
-                const presetFoodData = {
-                    guide: "「嘉義市區」是享譽全台的美食木都！針對第一天中午的自由活動，同仁可以前往「檜意森活村」散步、漫遊「森林之歌」，並沿著週邊的林森路與市區核心道路尋訪在地特色風味。本次特別精選在地指標性的涼麵、多間排隊火雞肉飯名店與文青手作冰品，請參考以下必點祕笈！",
-                    food: [
-                        "源興御香屋 二店 (二店排隊人潮通常比一店少，省時的最佳朝聖首選！)",
-                        "公園涼麵 (嘉義特有的寬麵涼麵淋上濃育的白醋美乃滋，獨特清爽香氣)",
-                        "民主火雞肉飯 (特製純蔥油與紅蔥頭油提味，味道醇厚香甜、口耳相傳名店)",
-                        "阿宏師火雞肉飯 (肉質肥美厚實多汁，火雞肉片飯搭配半熟蛋是夢幻組合)",
-                        "阿樓師火雞肉飯 (嘉義晚餐宵夜的首選！醬汁甘甜，豬血湯及各式小菜備受推崇)",
-                        "正統火雞肉飯 (在地人超愛、高 CP 值的火雞片飯與美味涼菜排隊店)",
-                        "桃城三禾火雞肉飯 (口味清爽細緻、不油不膩，受到周邊居民大力推薦的乾淨名店)",
-                        "南門涼肉圓 (嘉義限定！冰鎮過的涼肉圓淋上特調白醋與醬油，酷暑消暑聖品)",
-                        "品安豆花 (傳承自台南的古法豆花，口感綿密，結合焦糖冰沙清甜香濃)",
-                        "一涼製冰所 (文青日系手作冰磚，脆皮餅乾夾厚實香濃夾心冰淇淋，超夯拍照小點)"
-                    ],
-                    mustOrder: [
-                        "御香屋二店：招牌紅鑽葡萄柚綠茶 (強烈建議微冰少糖，並請務必加入一顆話梅調味，入口最完美)",
-                        "公園涼麵：招牌寬涼麵 (必加蒜泥)、古早味肉骨酥湯",
-                        "民主火雞肉飯：火雞肉片飯 + 當歸鴨湯、特製綜合涼菜",
-                        "阿宏師：火雞肉片飯 + 半熟荷包蛋 (用筷子輕輕戳破金黃蛋黃、均勻拌入蔥油米飯，絕品！)",
-                        "阿樓師：火雞肉絲飯、乾切生肉片、味噌湯",
-                        "正統：火雞肉片飯、涼拌粉豬肝、金針排骨湯",
-                        "桃城三禾：火雞片飯、涼拌手切沙拉、味噌豆腐湯",
-                        "南門涼肉圓：招牌冰涼肉圓 (淋特調白醋醬)、香Q涼粉條",
-                        "品安豆花：綜合豆花 (推薦自選配料加上焦糖冰沙與特製地瓜圓)",
-                        "一涼製冰所：泰式奶茶口味冰磚、草莓餅乾冰磚"
-                    ]
-                };
-
-                // AI Search & Grounding API Integration
-                const openFoodRecommendation = async (item) => {
+                const openFoodRecommendation = () => {
                     showAIModal.value = true;
-                    aiLoading.value = true;
-                    aiError.value = '';
-                    aiResult.value = null;
-                    aiSources.value = [];
-
-                    const apiKey = customApiKey.value.trim();
-                    if (!apiKey) {
-                        setTimeout(() => {
-                            aiResult.value = presetFoodData;
-                            aiLoading.value = false;
-                        }, 800);
-                        return;
-                    }
-
-                    const systemPrompt = `
-                    你是頂級台灣嘉義旅遊與美食達人。針對嘉義市區、檜意森活村與森林之歌周邊，請提供附近散步攻略、精選知名必吃美食，以及這些店的必點菜單。
-                    特別注意：你必須包含並特別分析以下店家：「公園涼麵」、「民主火雞肉飯」、「阿宏師火雞肉飯」、「阿樓師火雞肉飯」、「正統火雞肉飯」、「桃城三禾火雞肉飯」、「南門涼肉圓」、「品安豆花」、「源興御香屋二店」、「一涼製冰所」。
-                    嚴禁推薦任何伴手禮、土產，也嚴禁介紹景點歷史故事。只專注在「附近攻略」、「知名美食」與「必點菜單」三個板塊。
-                    回傳格式必須是符合規定好的 JSON，嚴禁包含任何額外 markdown 標記或 \`\`\`json 符號，只回傳純 JSON。
-                    JSON 結構：
-                    {
-                      "guide": "針對檜意森活村、森林之歌與市區周邊提供最實用的自由活動步行與散步攻略、排隊免等待祕訣",
-                      "food": ["公園涼麵 (特色描述)", "民主火雞肉飯 (特色描述)", "阿宏師火雞肉飯 (特色描述)", "阿樓師火雞肉飯 (特色描述)", "正統火雞肉飯 (特色描述)", "桃城三禾火雞肉飯 (特色描述)", "南門涼肉圓 (特色描述)", "品安豆花 (特色描述)", "源興御香屋二店 (特色描述)", "一涼製冰所 (特色描述)"],
-                      "mustOrder": ["公園涼麵 - 招牌菜", "民主火雞肉飯 - 招牌菜", "阿宏師 - 招牌點法", "阿樓師 - 招牌點法", "正統 - 招牌點法", "桃城三禾 - 招牌點法", "南門涼肉圓 - 招牌點法", "品安豆花 - 招牌點法", "源興御香屋二店 - 推薦點法", "一涼製冰所 - 推薦點法"]
-                    }
-                    `;
-
-                    const userQuery = `請利用 Google Grounding 搜尋在嘉義市區、檜意森活村附近的知名必吃排隊美食與火雞肉飯。必須深入提供「公園涼麵」、「民主火雞肉飯」、「阿宏師」、「阿樓師」、「正統」、「桃城三禾」、「南門涼肉圓」、「品安」、「御香屋(二店人比較少)」、「一涼」這些店的特色與詳細的「必點菜單」資訊，以供世座建設員工旅遊參考。`;
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-
-                    const payload = {
-                        contents: [{ parts: [{ text: userQuery }] }],
-                        tools: [{ "google_search": {} }],
-                        systemInstruction: {
-                            parts: [{ text: systemPrompt }]
-                        },
-                        generationConfig: {
-                            responseMimeType: "application/json"
-                        }
-                    };
-
-                    let delay = 1000;
-                    for (let attempt = 1; attempt <= 2; attempt++) {
-                        try {
-                            const response = await fetch(apiUrl, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(payload)
-                            });
-
-                            if (!response.ok) {
-                                throw new Error(`HTTP status ${response.status}`);
-                            }
-
-                            const result = await response.json();
-                            const candidate = result.candidates?.[0];
-
-                            if (candidate && candidate.content?.parts?.[0]?.text) {
-                                const jsonText = candidate.content.parts[0].text;
-                                aiResult.value = JSON.parse(jsonText);
-
-                                if (candidate.groundingMetadata?.groundingAttributions) {
-                                    aiSources.value = candidate.groundingMetadata.groundingAttributions
-                                        .map(attr => ({
-                                            uri: attr.web?.uri,
-                                            title: attr.web?.title
-                                        }))
-                                        .filter(src => src.uri && src.title)
-                                        .slice(0, 4);
-                                }
-                                aiLoading.value = false;
-                                return;
-                            } else {
-                                throw new Error("API 沒有傳回有效資料。");
-                            }
-
-                        } catch (err) {
-                            console.warn(`Attempt ${attempt} failed:`, err);
-                            if (attempt === 2) {
-                                aiResult.value = presetFoodData;
-                                aiLoading.value = false;
-                            } else {
-                                await new Promise(resolve => setTimeout(resolve, delay));
-                                delay *= 2;
-                            }
-                        }
-                    }
                 };
-
-                // Watch activeTab to repaint Leaflet markers
-                watch(activeTab, () => {
-                    nextTick(() => {
-                        if (activeTab.value === 'day1' || activeTab.value === 'day2') {
-                            if (!map) {
-                                initMap();
-                            } else {
-                                map.invalidateSize();
-                                updateMapMarkers();
-                            }
-                        }
-                    });
-                });
 
                 onMounted(() => {
-                    initMap();
                     fetchWeather();
+                    // 每 3 分鐘自動即時更新嘉義天氣數據
+                    setInterval(() => {
+                        fetchWeather();
+                    }, 180000);
                 });
 
                 return {
                     itinerary,
-                    backups,
                     villas,
                     activeTab,
                     currentDayItinerary,
@@ -1314,27 +777,15 @@
                     getTypeLabel,
                     getNextTravelTime,
                     
-                    // Controls
-                    showBackupDrawer,
                     showAIModal,
-                    showApiKeyInput,
-                    showDay1LunchBackup,
-                    showDay2LunchBackup,
-                    showXiangheNotes,
-                    customApiKey,
 
-                    // Map & weather
-                    locateUser,
-                    focusMap,
-                    userLocation,
                     currentTemp,
                     weatherIcon,
+                    isWeatherLoading,
+                    fetchWeather,
 
-                    // AI virtual guide
                     aiLoading,
                     aiResult,
-                    aiSources,
-                    aiError,
                     openFoodRecommendation
                 };
             }
