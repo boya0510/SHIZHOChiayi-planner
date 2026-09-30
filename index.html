@@ -60,12 +60,13 @@
             opacity: 0;
             transform: translateY(10px);
         }
-        @keyframes bounce-travel {
-            0%, 100% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-4px) scale(1.1); }
+        @keyframes drive {
+            0% { transform: translateX(0px) scale(1); }
+            50% { transform: translateX(12px) scale(1.15); }
+            100% { transform: translateX(0px) scale(1); }
         }
-        .animate-bounce-travel {
-            animation: bounce-travel 1s infinite ease-in-out;
+        .animate-drive {
+            animation: drive 0.8s ease-in-out infinite;
         }
         .glass-card {
             background: rgba(255, 255, 255, 0.85);
@@ -304,10 +305,8 @@
                             class="my-3 py-1 pl-4 flex items-center space-x-2 text-amber-700/80 font-medium"
                         >
                             <span class="h-px w-6 bg-cream-300"></span>
-                            <div class="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center shadow-2xs">
-                                <i :class="getNextTravelTime(item.id).type === 'walk' ? 'fa-solid fa-person-walking text-amber-600 animate-bounce-travel' : 'fa-solid fa-bus text-amber-600 animate-bounce-travel'" class="text-xs"></i>
-                            </div>
-                            <span class="text-[10px] bg-cream-100/50 px-2 py-0.5 rounded border border-cream-200/30">
+                            <i :class="getNextTravelTime(item.id).type === 'walk' ? 'fa-solid fa-person-walking text-amber-600' : 'fa-solid fa-bus text-amber-600'" class="text-xs animate-drive"></i>
+                            <span class="text-[10px] bg-cream-100/60 px-2 py-0.5 rounded border border-cream-200/50 font-semibold">
                                 <span v-if="getNextTravelTime(item.id).type === 'walk'">
                                     步行約 <strong class="font-bold text-amber-800">{{ getNextTravelTime(item.id).time }}</strong> 分鐘
                                 </span>
@@ -384,7 +383,7 @@
             </button>
         </transition>
 
-        <!-- Food & Drinks Modal Only -->
+        <!-- Food & Drinks Modal -->
         <transition name="fade">
             <div v-if="showAIModal" class="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-end justify-center p-4">
                 <div class="bg-cream-100 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden max-h-[88vh] flex flex-col border border-cream-200">
@@ -404,7 +403,7 @@
                     </div>
 
                     <div class="flex-1 overflow-y-auto p-5 space-y-4">
-                        <div v-if="aiResult" class="space-y-4">
+                        <div v-if="!aiLoading && aiResult" class="space-y-4">
                             <!-- 1. 散策攻略 -->
                             <div class="bg-white p-4 rounded-xl border border-cream-200 shadow-sm">
                                 <h5 class="text-xs font-bold text-cream-900 border-b border-cream-200 pb-2 mb-2 flex items-center">
@@ -413,24 +412,24 @@
                                 <p class="text-xs text-cream-800 leading-relaxed whitespace-pre-wrap">{{ aiResult.guide }}</p>
                             </div>
 
-                            <!-- 2. 知名美食與必點推薦整合 -->
+                            <!-- 2. 知名美食與必點指南 -->
                             <div class="bg-amber-50 border border-amber-200/60 p-4 rounded-xl">
                                 <h5 class="text-xs font-bold text-amber-800 pb-3 mb-3 border-b border-amber-200/40 flex items-center">
-                                    <i class="fa-solid fa-bowl-food text-amber-500 mr-2"></i> 推薦店家與必點商品指南
+                                    <i class="fa-solid fa-bowl-food text-amber-500 mr-2"></i> 推薦店家與必點商品
                                 </h5>
-                                <div class="flex flex-col space-y-2.5">
+                                <div class="flex flex-col space-y-3">
                                     <div 
                                         v-for="(item, index) in aiResult.foodList" 
                                         :key="index"
-                                        class="bg-white/90 p-3 rounded-lg border border-amber-200/40 shadow-xs"
+                                        class="bg-white/80 p-3 rounded-lg border border-amber-200/40 shadow-sm"
                                     >
-                                        <div class="text-xs font-bold text-cream-900 flex items-center justify-between">
-                                            <span>{{ item.name }}</span>
+                                        <div class="flex items-start justify-between">
+                                            <span class="text-xs font-bold text-cream-900">{{ item.name }}</span>
                                         </div>
-                                        <p class="text-[11px] text-cream-700 mt-1 mb-1.5">{{ item.desc }}</p>
-                                        <div class="bg-amber-100/60 px-2 py-1 rounded text-[11px] font-bold text-amber-900 flex items-center">
-                                            <i class="fa-solid fa-circle-check text-amber-600 mr-1.5 text-[10px]"></i>
-                                            <span>必點：{{ item.recommend }}</span>
+                                        <p class="text-[11px] text-cream-800 mt-1 mb-2 leading-relaxed">{{ item.desc }}</p>
+                                        <div class="bg-amber-100/50 px-2.5 py-1.5 rounded flex items-start">
+                                            <i class="fa-solid fa-thumbs-up text-amber-600 text-[10px] mr-1.5 mt-0.5"></i>
+                                            <span class="text-[11px] font-bold text-amber-900 leading-tight">必點：{{ item.recommend }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -471,7 +470,7 @@
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 };
 
-                // Main Itinerary Array with High Speed Rail Details & Exact Updated Times
+                // Main Itinerary Array
                 const itinerary = ref([
                     // Day 1: 10/2 (五)
                     {
@@ -750,7 +749,7 @@
                     }
                 ]);
 
-                // Active tab - 'day1', 'day2', 'rooms'
+                // Active tab
                 const activeTab = ref('day1');
 
                 // Modal Controls
@@ -761,19 +760,20 @@
                 const weatherIcon = ref('fa-solid fa-cloud-sun text-amber-500');
                 const isWeatherLoading = ref(false);
 
-                // AI Food Guide Data
+                // AI Food Guide Data (Integrated)
+                const aiLoading = ref(false);
                 const aiResult = ref({
                     guide: "「嘉義市區」是享譽全台的美食木都！不論是第一天中午或第二天市區散策，同仁可於文化路商圈、中正路及檜意森活村周邊自由漫步，尋訪在地指標性的涼麵、排隊火雞肉飯名店與限定手搖飲！",
                     foodList: [
-                        { name: "源興御香屋 二店", desc: "二店排隊人潮較少，買葡萄柚綠茶的朝聖首選！", recommend: "招牌紅鑽葡萄柚綠茶（建議微冰少糖，加一顆話梅調味）" },
-                        { name: "公園涼麵", desc: "嘉義特有美乃滋寬麵涼麵，搭配美乃滋與蒜泥，香濃爽口", recommend: "招牌寬涼麵（必加蒜泥與美乃滋）、古早味肉骨酥湯" },
-                        { name: "民主火雞肉飯", desc: "純紅蔥頭油提味，香氣醇厚獨特，深受口碑推崇", recommend: "火雞肉片飯 + 當歸鴨湯、特製綜合涼菜" },
-                        { name: "阿宏師火雞肉飯", desc: "肉質肥厚多汁，火雞肉片飯搭配半熟蛋是極品組合", recommend: "火雞肉片飯 + 半熟荷包蛋（戳破蛋黃拌入蔥油米飯）" },
-                        { name: "阿樓師火雞肉飯", desc: "晚餐宵夜名店，醬汁甘甜，豬血湯與切盤小菜大推", recommend: "火雞肉絲飯、乾切生肉片、味噌湯" },
-                        { name: "正統火雞肉飯", desc: "高 CP 值在地人口袋名單，火雞片飯與手作涼菜必點", recommend: "火雞肉片飯、涼拌粉豬肝、金針排骨湯" },
-                        { name: "南門涼肉圓", desc: "嘉義限定！冰鎮涼肉圓淋上特調美乃滋醬油，酷暑首選", recommend: "招牌冰涼肉圓（淋特調美乃滋醬）、香 Q 涼粉條" },
-                        { name: "品安豆花", desc: "古法手工豆花，口感極致綿密，結合焦糖冰沙清甜香濃", recommend: "綜合豆花（推薦選焦糖冰沙底加上特製地瓜圓）" },
-                        { name: "一涼製冰所", desc: "文青日系冰磚，脆皮餅乾夾香濃厚實冰淇淋，超夯小點", recommend: "泰式奶茶冰磚、草莓餅乾冰磚" }
+                        { name: "源興御香屋 二店", desc: "二店排隊人潮較少，買葡萄柚綠茶的首選！", recommend: "招牌紅鑽葡萄柚綠茶（微冰少糖 + 話梅）" },
+                        { name: "公園涼麵", desc: "嘉義特有美乃滋寬麵涼麵，搭配美乃滋與蒜泥，香濃爽口。", recommend: "招牌寬涼麵（加蒜泥與美乃滋）、古早味肉骨酥湯" },
+                        { name: "民主火雞肉飯", desc: "純紅蔥頭油提味，香氣醇厚獨特，深受口碑推崇。", recommend: "火雞肉片飯 + 當歸鴨湯、特製綜合涼菜" },
+                        { name: "阿宏師火雞肉飯", desc: "肉質肥厚多汁，火雞肉片飯搭配半熟蛋是極品組合。", recommend: "火雞肉片飯 + 半熟荷包蛋（戳破拌入飯中）" },
+                        { name: "阿樓師火雞肉飯", desc: "晚餐宵夜名店，醬汁甘甜，豬血湯與切盤小菜大推。", recommend: "火雞肉絲飯、乾切生肉片、味噌湯" },
+                        { name: "正統火雞肉飯", desc: "高 CP 值在地人口袋名單，火雞片飯與手作涼菜必點。", recommend: "火雞肉片飯、涼拌粉豬肝、金針排骨湯" },
+                        { name: "南門涼肉圓", desc: "嘉義限定！冰鎮涼肉圓淋上特調美乃滋醬油，酷暑首選。", recommend: "招牌冰涼肉圓、香Q涼粉條" },
+                        { name: "品安豆花", desc: "古法手工豆花，口感極致綿密，結合焦糖冰沙清甜香濃。", recommend: "綜合豆花（焦糖冰沙底 + 地瓜圓）" },
+                        { name: "一涼製冰所", desc: "文青日系冰磚，脆皮餅乾夾香濃厚實冰淇淋，超夯小點。", recommend: "泰式奶茶冰磚、草莓餅乾冰磚" }
                     ]
                 });
 
@@ -843,9 +843,6 @@
                 onMounted(() => {
                     fetchWeather();
                     window.addEventListener('scroll', handleScroll, { passive: true });
-                    setInterval(() => {
-                        fetchWeather();
-                    }, 180000);
                 });
 
                 onUnmounted(() => {
@@ -869,6 +866,7 @@
                     isWeatherLoading,
                     fetchWeather,
 
+                    aiLoading,
                     aiResult,
                     openFoodRecommendation,
 
