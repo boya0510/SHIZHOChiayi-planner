@@ -60,13 +60,20 @@
             opacity: 0;
             transform: translateY(10px);
         }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(0.98); }
+        }
+        .animate-pulse-subtle {
+            animation: pulse-subtle 3s infinite ease-in-out;
+        }
         @keyframes drive {
-            0% { transform: translateX(0px) scale(1); }
-            50% { transform: translateX(12px) scale(1.15); }
-            100% { transform: translateX(0px) scale(1); }
+            0% { transform: translateX(-3px); }
+            50% { transform: translateX(8px); }
+            100% { transform: translateX(-3px); }
         }
         .animate-drive {
-            animation: drive 0.8s ease-in-out infinite;
+            animation: drive 1.2s ease-in-out infinite;
         }
         .glass-card {
             background: rgba(255, 255, 255, 0.85);
@@ -140,24 +147,26 @@
                 </div>
 
                 <!-- Interactive Weather Badge -->
-                <div 
-                    @click="fetchWeather" 
-                    title="點擊刷新天氣" 
-                    class="bg-white/90 backdrop-blur-md px-3 py-2 rounded-2xl border border-amber-200/60 shadow-sm flex items-center space-x-2 cursor-pointer hover:shadow-md hover:border-amber-400 active:scale-95 transition-all duration-200 group"
-                >
-                    <div class="w-7 h-7 rounded-xl bg-amber-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <i :class="[weatherIcon, isWeatherLoading ? 'animate-spin' : '']" class="text-amber-500 text-sm"></i>
-                    </div>
-                    <div class="flex flex-col">
-                        <span class="text-[9px] text-gray-400 font-bold leading-none">嘉義</span>
-                        <span class="text-xs font-black text-cream-900 mt-0.5 leading-none">{{ currentTemp }}°C</span>
-                    </div>
+            <div 
+                @click="fetchWeather" 
+                title="點擊刷新即時天氣" 
+                class="bg-white/90 backdrop-blur-md px-3 py-2 rounded-2xl border border-amber-200/60 shadow-sm flex items-center space-x-2 cursor-pointer hover:shadow-md hover:border-amber-400 active:scale-95 transition-all duration-200 group"
+            >
+                <div class="w-7 h-7 rounded-xl bg-amber-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i :class="[weatherIcon, isWeatherLoading ? 'animate-spin' : '']" class="text-amber-500 text-sm"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-[9px] text-gray-400 font-bold leading-none">嘉義</span>
+                    <span class="text-xs font-black text-cream-900 mt-0.5 leading-none">{{ currentTemp }}°C</span>
                 </div>
             </div>
+        </div>
 
-            <!-- Tour Bus Info Card Pill -->
-            <div class="mt-3.5 relative z-10 flex items-center">
-                <div class="bg-white/80 backdrop-blur border border-cream-200/90 rounded-xl px-3 py-1.5 flex items-center justify-between w-full shadow-xs hover:border-amber-300 transition">
+        <!-- Tour Bus Info Card Pill -->
+        <div class="mt-3.5 relative z-10 flex flex-col">
+            <div class="bg-white/80 backdrop-blur border border-cream-200/90 rounded-xl px-3 py-2 flex flex-col w-full shadow-xs hover:border-amber-300 transition gap-1.5">
+                <!-- Bus Info Row -->
+                <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2">
                         <div class="w-6 h-6 rounded-lg bg-amber-500/15 text-amber-700 flex items-center justify-center text-xs">
                             <i class="fa-solid fa-bus"></i>
@@ -166,13 +175,27 @@
                     </div>
                     <div class="flex items-center space-x-1">
                         <span class="text-[9px] text-amber-700 font-bold uppercase tracking-wider">車牌</span>
-                        <span class="font-mono text-xs font-black text-cream-900 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md shadow-2xs">KAA-6291</span>
+                        <span class="font-mono text-[11px] font-black text-cream-900 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md shadow-2xs">KAA-6291</span>
                     </div>
                 </div>
+                <!-- Driver Info Row -->
+                <div class="flex items-center justify-between border-t border-cream-100/80 pt-1.5 mt-0.5">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-[11px]">
+                            <i class="fa-solid fa-id-badge"></i>
+                        </div>
+                        <span class="text-[11px] font-bold text-cream-800">司機：林建佑</span>
+                    </div>
+                    <a href="tel:0958678996" class="flex items-center space-x-1.5 bg-cream-50 hover:bg-cream-100 border border-cream-200 px-2 py-0.5 rounded-md transition active:scale-95 shadow-2xs">
+                        <i class="fa-solid fa-phone text-[9px] text-emerald-600"></i>
+                        <span class="font-mono text-[11px] font-bold text-cream-900">0958-678-996</span>
+                    </a>
+                </div>
             </div>
+        </div>
 
-            <!-- Responsive Tab Bar Buttons -->
-            <div class="grid grid-cols-4 gap-2 mt-4 pt-2 relative z-10">
+        <!-- Responsive Tab Bar Buttons -->
+        <div class="grid grid-cols-4 gap-2 mt-4 pt-2 relative z-10">
                 <button 
                     @click="activeTab = 'day1'"
                     :class="activeTab === 'day1' ? 'bg-cream-900 text-white shadow-lg ring-2 ring-cream-900/10' : 'bg-white text-cream-800 border border-cream-200/80 hover:border-amber-400 hover:bg-cream-50'"
@@ -234,19 +257,19 @@
                 </div>
 
                 <!-- Timeline Cards -->
-                <div class="space-y-4 relative pl-3 border-l border-cream-200 ml-2">
+                <div class="space-y-4 relative pl-3 border-l border-cream-200 ml-2 pt-2 pb-12">
                     <div 
                         v-for="(item, idx) in currentDayItinerary" 
                         :key="item.id"
                         class="relative group transition-all duration-300"
                     >
                         <!-- Timeline Node Dot -->
-                        <div class="absolute -left-[19px] top-4 w-3.5 h-3.5 rounded-full border-2 border-cream-50 bg-white shadow flex items-center justify-center">
+                        <div class="absolute -left-[19px] top-4 w-3.5 h-3.5 rounded-full border-2 bg-white shadow flex items-center justify-center border-amber-500">
                             <span :class="getTypeDotColor(item.type)" class="w-1.5 h-1.5 rounded-full"></span>
                         </div>
 
                         <!-- Card Body -->
-                        <div class="bg-white border border-cream-200 hover:border-amber-500/30 rounded-xl p-4 transition-all duration-300 shadow-sm relative overflow-hidden">
+                        <div class="bg-white rounded-xl p-4 transition-all duration-300 relative overflow-hidden border border-cream-200 hover:border-amber-400 shadow-sm">
                             <!-- Category Badge -->
                             <div class="absolute top-3 right-3 flex items-center">
                                 <span :class="getTypeBadgeStyle(item.type)" class="text-[8px] font-bold px-2 py-0.5 rounded-full tracking-wider">
@@ -305,8 +328,8 @@
                             class="my-3 py-1 pl-4 flex items-center space-x-2 text-amber-700/80 font-medium"
                         >
                             <span class="h-px w-6 bg-cream-300"></span>
-                            <i :class="getNextTravelTime(item.id).type === 'walk' ? 'fa-solid fa-person-walking text-amber-600' : 'fa-solid fa-bus text-amber-600'" class="text-xs animate-drive"></i>
-                            <span class="text-[10px] bg-cream-100/60 px-2 py-0.5 rounded border border-cream-200/50 font-semibold">
+                            <i :class="[getNextTravelTime(item.id).type === 'walk' ? 'fa-solid fa-person-walking' : 'fa-solid fa-bus', 'text-amber-500 text-[12px] animate-drive']"></i>
+                            <span class="text-[10px] bg-cream-100/50 px-2 py-0.5 rounded border border-cream-200/30">
                                 <span v-if="getNextTravelTime(item.id).type === 'walk'">
                                     步行約 <strong class="font-bold text-amber-800">{{ getNextTravelTime(item.id).time }}</strong> 分鐘
                                 </span>
@@ -383,7 +406,7 @@
             </button>
         </transition>
 
-        <!-- Food & Drinks Modal -->
+        <!-- Food & Drinks Modal Only (No Backup Attractions) -->
         <transition name="fade">
             <div v-if="showAIModal" class="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-end justify-center p-4">
                 <div class="bg-cream-100 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden max-h-[88vh] flex flex-col border border-cream-200">
@@ -415,13 +438,13 @@
                             <!-- 2. 知名美食與必點指南 -->
                             <div class="bg-amber-50 border border-amber-200/60 p-4 rounded-xl">
                                 <h5 class="text-xs font-bold text-amber-800 pb-3 mb-3 border-b border-amber-200/40 flex items-center">
-                                    <i class="fa-solid fa-bowl-food text-amber-500 mr-2"></i> 推薦店家與必點商品
+                                    <i class="fa-solid fa-store text-amber-500 mr-2"></i> 推薦店家與必點商品
                                 </h5>
                                 <div class="flex flex-col space-y-3">
                                     <div 
-                                        v-for="(item, index) in aiResult.foodList" 
+                                        v-for="(item, index) in aiResult.foodGuide" 
                                         :key="index"
-                                        class="bg-white/80 p-3 rounded-lg border border-amber-200/40 shadow-sm"
+                                        class="bg-white/80 p-3 rounded-lg border border-amber-200/40 shadow-sm relative overflow-hidden"
                                     >
                                         <div class="flex items-start justify-between">
                                             <span class="text-xs font-bold text-cream-900">{{ item.name }}</span>
@@ -467,16 +490,26 @@
                 };
 
                 const scrollToTop = () => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                };
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
 
-                // Main Itinerary Array
-                const itinerary = ref([
-                    // Day 1: 10/2 (五)
-                    {
-                        id: 1,
-                        day: 1,
-                        time: '07:45',
+            // Main Itinerary Array with High Speed Rail Details & Exact Updated Times
+            const itinerary = ref([
+                // Day 1: 10/2 (五)
+                {
+                    id: 1,
+                    day: 1,
+                    time: '07:45',
+                    type: 'transport',
+                    title: '台北高鐵站集合',
+                    location: '台北高鐵站',
+                    note: '請至 <strong class="font-bold text-[#b83826]">東三門</strong> 集合，準備搭乘高鐵前往嘉義。',
+                    coords: null
+                },
+                {
+                    id: 2,
+                    day: 1,
+                        time: '07:50',
                         type: 'transport',
                         title: '台北高鐵站集合',
                         location: '台北高鐵站',
@@ -693,16 +726,17 @@
 
                 // Tour Bus Travel Times between sequential events
                 const busTravelTimes = {
-                    3: { type: 'bus', time: 15 },
-                    5: { type: 'bus', time: 40 },
-                    6: { type: 'bus', time: 25 },
-                    7: { type: 'bus', time: 15 },
-                    8: { type: 'bus', time: 25 },
-                    12: { type: 'bus', time: 40 },
-                    14: { type: 'bus', time: 15 },
-                    15: { type: 'bus', time: 35 },
-                    16: { type: 'bus', time: 45 },
-                    17: { type: 'bus', time: 35 }
+                    3: { type: 'bus', time: 15 },  // 嘉義高鐵站 ➔ 故宮南院 (15 分鐘)
+                    5: { type: 'bus', time: 40 },  // 故宮南院 ➔ 林聰明砂鍋魚頭 (40 分鐘)
+                    6: { type: 'bus', time: 25 },  // 林聰明砂鍋魚頭 ➔ 嘉義酒類文物館 (25 分鐘)
+                    7: { type: 'bus', time: 15 },  // 嘉義酒類文物館 ➔ 民雄鬼屋咖啡 (15 分鐘)
+                    8: { type: 'bus', time: 25 },  // 民雄鬼屋咖啡 ➔ 日見山民宿 (25 分鐘)
+                    // Day 2
+                    12: { type: 'bus', time: 40 }, // 日見山民宿 ➔ 檜意森活村 (40 分鐘)
+                    14: { type: 'bus', time: 15 }, // 檜意森活村 ➔ 竹居茶樓 (15 分鐘)
+                    15: { type: 'bus', time: 35 }, // 竹居茶樓 ➔ 菁寮老街 (35 分鐘)
+                    16: { type: 'bus', time: 45 }, // 菁寮老街 ➔ 蚵老大海鮮碳烤 (45 分鐘)
+                    17: { type: 'bus', time: 35 }  // 蚵老大海鮮碳烤 ➔ 嘉義高鐵站 (35 分鐘)
                 };
 
                 const getNextTravelTime = (itemId) => {
@@ -749,7 +783,7 @@
                     }
                 ]);
 
-                // Active tab
+                // Active tab - 'day1', 'day2', 'rooms'
                 const activeTab = ref('day1');
 
                 // Modal Controls
@@ -760,20 +794,20 @@
                 const weatherIcon = ref('fa-solid fa-cloud-sun text-amber-500');
                 const isWeatherLoading = ref(false);
 
-                // AI Food Guide Data (Integrated)
+                // Integrated AI Food Guide Data
                 const aiLoading = ref(false);
                 const aiResult = ref({
                     guide: "「嘉義市區」是享譽全台的美食木都！不論是第一天中午或第二天市區散策，同仁可於文化路商圈、中正路及檜意森活村周邊自由漫步，尋訪在地指標性的涼麵、排隊火雞肉飯名店與限定手搖飲！",
-                    foodList: [
-                        { name: "源興御香屋 二店", desc: "二店排隊人潮較少，買葡萄柚綠茶的首選！", recommend: "招牌紅鑽葡萄柚綠茶（微冰少糖 + 話梅）" },
-                        { name: "公園涼麵", desc: "嘉義特有美乃滋寬麵涼麵，搭配美乃滋與蒜泥，香濃爽口。", recommend: "招牌寬涼麵（加蒜泥與美乃滋）、古早味肉骨酥湯" },
-                        { name: "民主火雞肉飯", desc: "純紅蔥頭油提味，香氣醇厚獨特，深受口碑推崇。", recommend: "火雞肉片飯 + 當歸鴨湯、特製綜合涼菜" },
-                        { name: "阿宏師火雞肉飯", desc: "肉質肥厚多汁，火雞肉片飯搭配半熟蛋是極品組合。", recommend: "火雞肉片飯 + 半熟荷包蛋（戳破拌入飯中）" },
-                        { name: "阿樓師火雞肉飯", desc: "晚餐宵夜名店，醬汁甘甜，豬血湯與切盤小菜大推。", recommend: "火雞肉絲飯、乾切生肉片、味噌湯" },
-                        { name: "正統火雞肉飯", desc: "高 CP 值在地人口袋名單，火雞片飯與手作涼菜必點。", recommend: "火雞肉片飯、涼拌粉豬肝、金針排骨湯" },
-                        { name: "南門涼肉圓", desc: "嘉義限定！冰鎮涼肉圓淋上特調美乃滋醬油，酷暑首選。", recommend: "招牌冰涼肉圓、香Q涼粉條" },
-                        { name: "品安豆花", desc: "古法手工豆花，口感極致綿密，結合焦糖冰沙清甜香濃。", recommend: "綜合豆花（焦糖冰沙底 + 地瓜圓）" },
-                        { name: "一涼製冰所", desc: "文青日系冰磚，脆皮餅乾夾香濃厚實冰淇淋，超夯小點。", recommend: "泰式奶茶冰磚、草莓餅乾冰磚" }
+                    foodGuide: [
+                        { name: "源興御香屋 二店", desc: "二店排隊人潮較少，買葡萄柚綠茶的朝聖首選！", recommend: "招牌紅鑽葡萄柚綠茶 (微冰少糖，必加話梅)" },
+                        { name: "公園涼麵", desc: "嘉義特有寬麵涼麵，搭配美乃滋與蒜泥，香濃爽口", recommend: "招牌寬涼麵、古早味肉骨酥湯" },
+                        { name: "民主火雞肉飯", desc: "純紅蔥頭油提味，香氣醇厚獨特，深受口碑推崇", recommend: "火雞肉片飯 + 當歸鴨湯、特製綜合涼菜" },
+                        { name: "阿宏師火雞肉飯", desc: "肉質肥厚多汁，火雞肉片飯搭配半熟蛋是極品組合", recommend: "火雞肉片飯 + 半熟荷包蛋 (戳破蛋黃拌入飯中)" },
+                        { name: "阿樓師火雞肉飯", desc: "晚餐宵夜名店，醬汁甘甜，豬血湯與切盤小菜大推", recommend: "火雞肉絲飯、乾切生肉片、味噌湯" },
+                        { name: "正統火雞肉飯", desc: "高 CP 值在地人口袋名單，火雞片飯與手作涼菜必點", recommend: "火雞肉片飯、涼拌粉豬肝、金針排骨湯" },
+                        { name: "南門涼肉圓", desc: "嘉義限定！冰鎮涼肉圓淋上特調美乃滋醬油，酷暑首選", recommend: "招牌冰涼肉圓、香 Q 涼粉條" },
+                        { name: "品安豆花", desc: "古法手工豆花，口感極致綿密，結合焦糖冰沙清甜香濃", recommend: "綜合豆花 (推薦焦糖冰沙底+特製地瓜圓)" },
+                        { name: "一涼製冰所", desc: "文青日系冰磚，脆皮餅乾夾香濃厚實冰淇淋，超夯小點", recommend: "泰式奶茶冰磚、草莓餅乾冰磚" }
                     ]
                 });
 
@@ -825,7 +859,7 @@
                             if (code === 0) weatherIcon.value = 'fa-solid fa-sun text-yellow-500';
                             else if (code <= 3) weatherIcon.value = 'fa-solid fa-cloud-sun text-amber-500';
                             else if (code <= 48) weatherIcon.value = 'fa-solid fa-cloud text-gray-400';
-                            else if (code <= 67) weatherIcon.value = 'fa-solid fa-cloud-rain text-blue-400';
+                            else if (code <= 67) weatherIcon.value, 'fa-solid fa-cloud-rain text-blue-400';
                             else weatherIcon.value = 'fa-solid fa-cloud-showers-heavy text-indigo-400';
                         }
                     } catch (error) {
@@ -843,6 +877,9 @@
                 onMounted(() => {
                     fetchWeather();
                     window.addEventListener('scroll', handleScroll, { passive: true });
+                    setInterval(() => {
+                        fetchWeather();
+                    }, 180000);
                 });
 
                 onUnmounted(() => {
@@ -870,6 +907,7 @@
                     aiResult,
                     openFoodRecommendation,
 
+                    // Scroll interaction variables
                     isScrolled,
                     scrollProgress,
                     scrollToTop
